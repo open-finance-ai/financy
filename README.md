@@ -11,17 +11,27 @@ and an embedded MCP server for agents.
 npx @open-finance/cli status
 ```
 
+## Requirements
+
+The CLI talks to your Open-Finance data through the Financy API, which is a **paid
+feature**. To use it you must:
+
+1. **Register for a Financy account** at [open-finance.ai](https://open-finance.ai).
+2. **Subscribe to a paid plan** (Starter or Pro) — the data API is **not** available
+   on the free plan (every data command returns exit code `4`).
+3. Copy your `clientId`, `clientSecret`, and `userId` from the Financy app →
+   **Settings → API**.
+
 ## Setup
 
-Grab your `clientId`, `clientSecret`, and `userId` from Financy → Settings → API,
-then:
-
 ```sh
-financy setup                 # interactive prompts
+financy setup                 # interactive prompts (explains where to get the values)
 financy setup --no-input      # read FINANCY_CLIENT_ID / _SECRET / _USER_ID from env (agents/CI)
 ```
 
-> The data API is a paid feature — Starter and Pro plans only. Free orgs get exit 4.
+`setup` validates the credentials against the live API before saving, so an
+unregistered/free account is caught immediately (exit `3` for bad credentials,
+`4` for an ineligible plan).
 
 ## Commands
 

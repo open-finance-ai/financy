@@ -19,8 +19,16 @@ export interface SetupContext {
   err: (chunk: string) => void
 }
 
+/** Where the three credential values come from — shown before interactive prompts. */
+const CREDENTIALS_GUIDE =
+  'financy needs your Financy API credentials: clientId, clientSecret, and userId.\n' +
+  'Find them in the Financy app → Settings → API.\n' +
+  'This requires a registered Financy account on a paid plan (Starter or Pro) —\n' +
+  'the data API is not available on the free plan. Sign up at https://open-finance.ai\n\n'
+
 /** `financy setup` — collect credentials, validate them, and persist to the config file. */
 export async function setupCommand(ctx: SetupContext): Promise<number> {
+  if (!ctx.noInput) ctx.out(CREDENTIALS_GUIDE)
   const credentials = ctx.noInput
     ? credentialsFromEnv(ctx.env)
     : await credentialsFromPrompts(ctx.prompt)

@@ -44,6 +44,8 @@ describe('financy setup --no-input', () => {
     expect(stderr).toBe('')
     expect(code).toBe(0)
     expect(stdout).toMatch(/financy status/)
+    // Non-interactive (agents/CI) must not get the human onboarding prose.
+    expect(stdout).not.toMatch(/paid plan/i)
 
     const file = join(testConfigDir(), 'config.json')
     expect(existsSync(file)).toBe(true)
@@ -104,13 +106,16 @@ describe('financy setup (interactive)', () => {
       'User ID': 'iuid',
     }
 
-    const { code, stderr } = await runCli(['setup'], {
+    const { code, stderr, stdout } = await runCli(['setup'], {
       env: {},
       prompt: async ({ label }) => answers[label]!,
     })
 
     expect(stderr).toBe('')
     expect(code).toBe(0)
+    // Interactive setup explains where the credentials come from and the paid requirement.
+    expect(stdout).toMatch(/paid plan/i)
+    expect(stdout).toMatch(/Settings → API/)
     expect(JSON.parse(readFileSync(join(testConfigDir(), 'config.json'), 'utf8'))).toEqual({
       profiles: { default: { clientId: 'icid', clientSecret: 'isecret', userId: 'iuid' } },
     })

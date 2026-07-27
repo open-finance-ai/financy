@@ -83,7 +83,7 @@ export async function run(argv: string[], io: RunIO = {}): Promise<number> {
 
   program
     .command('setup')
-    .description('Save your API credentials (from Financy → Settings → API)')
+    .description('Save your API credentials (Financy → Settings → API; requires a paid plan)')
     .option('--no-input', 'read credentials from FINANCY_* env vars (for agents/CI)')
     .action(async (opts: { input?: boolean }) => {
       exitCode = await setupCommand({
