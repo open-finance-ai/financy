@@ -1,0 +1,47 @@
+{
+  "name": "@open-finance/cli",
+  "version": "0.1.0",
+  "description": "The financy command-line tool for Open-Finance / Financy users and their AI agents",
+  "type": "module",
+  "bin": {
+    "financy": "dist/bin.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/open-finance-ai/financy.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "smoke": "node scripts/smoke.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.14.0",
+    "eslint": "^10.7.0",
+    "globals": "^17.7.0",
+    "tsup": "^8.2.4",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.65.0",
+    "undici": "^6.19.8",
+    "vitest": "^2.0.5"
+  }
+}
