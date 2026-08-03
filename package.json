@@ -60,6 +60,6 @@
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.65.0",
     "undici": "^6.19.8",
-    "vitest": "^2.0.5"
+    "vitest": "^3.2.6"
   }
 }
