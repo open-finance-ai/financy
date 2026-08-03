@@ -5,6 +5,11 @@ import { setupCommand } from './commands/setup.js'
 import { configCommand } from './commands/config.js'
 import { refreshCommand } from './commands/refresh.js'
 import { registerReadCommands } from './commands/read-commands.js'
+import {
+  resolveSkillsRoot,
+  skillsInstallCommand,
+  skillsListCommand,
+} from './commands/skills.js'
 import { createDefaultPrompt } from './prompt.js'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
@@ -32,6 +37,10 @@ export interface RunIO {
   nodeVersion?: string
   /** Command runner for `update` (global mode), injectable in tests. Defaults to spawning. */
   exec?: (cmd: string, args: string[]) => Promise<number>
+  /** Root of the bundled `skills/` directory, injectable in tests. Defaults to the package's. */
+  skillsRoot?: string
+  /** Directory `skills install` writes `.claude/skills/` under. Defaults to cwd. */
+  cwd?: string
 }
 
 /**
@@ -126,6 +135,41 @@ export async function run(argv: string[], io: RunIO = {}): Promise<number> {
       // Lazy-load the MCP SDK so it never costs the normal CLI path startup time.
       const { startMcpServer } = await import('./mcp/server.js')
       await startMcpServer(env)
+    })
+
+  const skills = program
+    .command('skills')
+    .description('Agent skills bundled with financy (Claude Code and other agents)')
+
+  skills
+    .command('list')
+    .description('List the bundled skills')
+    .option('--json', 'machine-readable output')
+    .action(async () => {
+      exitCode = await skillsListCommand({
+        skillsRoot: io.skillsRoot ?? resolveSkillsRoot(),
+        targetDir: io.cwd ?? process.cwd(),
+        json,
+        out,
+      })
+    })
+
+  skills
+    .command('install')
+    .argument('[names...]', 'skills to install (omit with --all for every skill)')
+    .description('Copy skills into this project\'s .claude/skills/ directory')
+    .option('--all', 'install every bundled skill')
+    .option('--dir <path>', 'install under this directory instead of the current one')
+    .option('--json', 'machine-readable output')
+    .action(async (names: string[], opts: { all?: boolean; dir?: string }) => {
+      exitCode = await skillsInstallCommand({
+        skillsRoot: io.skillsRoot ?? resolveSkillsRoot(),
+        targetDir: opts.dir ?? io.cwd ?? process.cwd(),
+        names,
+        all: opts.all === true,
+        json,
+        out,
+      })
     })
 
   program

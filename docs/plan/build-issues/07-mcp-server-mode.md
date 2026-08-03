@@ -12,7 +12,7 @@ PRD: `../PRD.md` (financy CLI v1)
 
 ## Acceptance criteria
 
-- [ ] `claude mcp add financy -- npx @open-finance/cli mcp` yields a working server (documented in README; verified manually once)
+- [ ] `claude mcp add financy -- npx financy mcp` yields a working server (documented in README; verified manually once)
 - [ ] All eleven tools return fixture-correct envelopes at the tool-call boundary, reusing the CLI test fixtures
 - [ ] `limit`/`cursor` params work on list tools; defaults match the CLI
 - [ ] Tool descriptions reviewed against the service-chat descriptions-as-spec convention; refresh carries the cost warning

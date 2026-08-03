@@ -1,15 +1,20 @@
-# financy-cli
+# financy
 
-`@open-finance/cli` — the `financy` command-line tool for Open-Finance / Financy
-users and their AI agents. Your accounts-aggregation data (connections, accounts,
-balances, transactions) in the terminal, with machine-first output for scripting
-and an embedded MCP server for agents.
+Your Open-Finance / Financy banking data — connections, accounts, balances,
+transactions — in the terminal, with machine-first output for scripting, an
+embedded MCP server for agents, and agent skills in the box.
+
+```sh
+npx financy status
+```
 
 ## Install
 
 ```sh
-npx @open-finance/cli status
+npm install -g financy     # or just use npx financy <command>
 ```
+
+Node 20+ is the only prerequisite.
 
 ## Requirements
 
@@ -44,6 +49,7 @@ financy categories                   The category taxonomy (English + Hebrew)
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
 financy config                       Show resolved endpoints + credential sources (secret masked)
+financy skills list|install          Agent skills bundled with the CLI
 financy mcp                          Run the embedded MCP server (stdio)
 ```
 
@@ -57,6 +63,25 @@ Every command takes `--json` for a stable machine-readable envelope
 `--all` (auto-paginate). Exit codes: `0` ok · `1` unexpected · `2` usage · `3` auth
 · `4` plan · `5` credits · `6` not-found · `7` api.
 
+## Agent skills
+
+Skills ship inside this package, so they can never drift from the CLI version they
+drive. Install them into a project's `.claude/skills/` directory:
+
+```sh
+financy skills list             # what's in the box
+financy skills install --all    # install every skill here
+financy skills install freshness-check --dir ~/work/analysis
+```
+
+| Skill | What it teaches an agent |
+|---|---|
+| `financy-setup` | Onboarding a user end to end: install, find the credentials, save them without ever echoing the secret, verify, and explain the paid-plan requirement on exit `4`. |
+| `freshness-check` | Reading `financy status --json`, deciding whether the data is current enough to answer with, and confirming the 20-credit cost before triggering a refresh. |
+
+Skills are plain `SKILL.md` files — read them under [`skills/`](skills/) before you
+install them.
+
 ## MCP server (for AI agents)
 
 `financy mcp` runs a stdio [Model Context Protocol](https://modelcontextprotocol.io)
@@ -65,7 +90,7 @@ server exposing the command surface 1:1 as `verb_noun` tools (`list_connections`
 to Claude Code:
 
 ```sh
-claude mcp add financy -- npx @open-finance/cli mcp
+claude mcp add financy -- npx financy mcp
 ```
 
 Credentials resolve exactly as the CLI does (config file or `FINANCY_*` env vars);
@@ -80,7 +105,7 @@ financy update
 ```
 
 Detects how it was installed and does the right thing: a global install runs
-`npm install -g @open-finance/cli@latest`; under `npx` it reminds you that npx always
+`npm install -g financy@latest`; under `npx` it reminds you that npx always
 runs the latest; as a project dependency it defers to your project's package manager.
 
 ## Releasing
@@ -107,5 +132,8 @@ npm run smoke
 
 - **Spec:** [docs/plan/PRD.md](docs/plan/PRD.md)
 - **Build issues:** [docs/plan/build-issues/](docs/plan/build-issues/)
-- **Decision record:** [docs/plan/MAP.md](docs/plan/MAP.md)
 - **Interface reference** (locked runnable prototype): [docs/plan/prototype/](docs/plan/prototype/)
+
+## License
+
+[Apache-2.0](LICENSE)
