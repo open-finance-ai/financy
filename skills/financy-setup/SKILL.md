@@ -22,12 +22,14 @@ Get the `financy` CLI configured and verified for this user. When you are done,
 
 These are not optional and they apply to every step below.
 
-- **Never echo the client secret.** Do not print it, do not read it back for
-  confirmation, do not write it into a file the user can see in the transcript,
-  and do not include it in a summary. Pass it to the CLI through an environment
-  variable and let the CLI persist it. If the user pastes it into the chat, do
-  not repeat it — acknowledge and move on. The same applies to the contents of
-  the config file: never `cat` it.
+- **Never handle the client secret at all.** Do not ask the user to paste it into
+  the conversation, and never place it in a command you run — a command you run
+  is recorded in the transcript, and it is visible in shell history and to
+  anything that can list processes. The user types the secret into
+  `financy setup`, which masks it at the prompt; you never see it. If the user
+  pastes it anyway, do not repeat it, do not use it in a command, and tell them
+  to rotate it in Financy → Settings → API. Never print it, read it back for
+  confirmation, or include it in a summary, and never `cat` the config file.
 - **Confirm before spending credits.** `financy refresh` costs 20 credits per
   run. Never run it without the user explicitly agreeing to that cost in this
   conversation.
@@ -77,32 +79,32 @@ npm install -g financy
 If the user cannot or does not want to install globally, every command in this
 skill also works as `npx financy <command>`.
 
-### 3. Collect the three values
+### 3. Have the user run setup themselves
 
-Ask the user to open the Financy app → **Settings → API** and provide
-`clientId`, `clientSecret`, and `userId`.
-
-Ask for all three in one message so they only make one trip. Tell them
-explicitly that you will not echo the secret back.
-
-### 4. Save them
-
-Run setup in non-interactive mode with the values supplied as environment
-variables, so nothing lands in the command line or the transcript:
+**Do not collect the credentials and run setup for them.** Ask the user to run
+this in their own terminal:
 
 ```bash
-FINANCY_CLIENT_ID='…' FINANCY_CLIENT_SECRET='…' FINANCY_USER_ID='…' financy setup --no-input
+financy setup
 ```
 
+It prompts for `clientId`, `clientSecret` and `userId` in turn, and **masks the
+secret as they type it** — so the secret goes straight from the user to the CLI
+and never passes through you, this conversation, or a command line. Tell them
+where to find the three values: the Financy app → **Settings → API**.
+
 `setup` validates the credentials against the live API before saving, so a wrong
-value fails here rather than later. On success it writes
-`~/.config/financy/config.json` with permissions `600`.
+value fails immediately rather than on their first real command. On success it
+writes `~/.config/financy/config.json` with permissions `600` and prints the path.
+
+Ask the user to tell you the exit code or what it printed — that is all you need.
+Do not ask them to paste any of the three values.
 
 Exit codes from `setup`:
 
 - `0` — saved and verified.
-- `3` — the credentials were rejected. Ask the user to re-copy them; a partial
-  paste or a stray space is the usual cause.
+- `3` — the credentials were rejected. Ask them to run `financy setup` again and
+  re-copy the values; a partial paste or a stray space is the usual cause.
 - `4` — the credentials are valid but the plan is not eligible. The CLI still
   saves them so a later upgrade works immediately. Go to *Handling exit 4*.
 - `7` — the API could not be reached. This is a network or endpoint problem, not
@@ -140,9 +142,16 @@ do not look for a workaround.
 ## Non-interactive and CI environments
 
 If `FINANCY_CLIENT_ID`, `FINANCY_CLIENT_SECRET` and `FINANCY_USER_ID` are
-already present in the environment, the CLI reads them directly and no config
-file is needed. `financy setup --no-input` is only useful when you want them
-persisted for future sessions.
+**already present in the environment** — put there by CI, a secret manager, or
+the user's own shell profile — the CLI reads them directly and no config file is
+needed. There is nothing for you to do; just run `financy status` and continue.
+
+`financy setup --no-input` reads those same variables and persists them for
+future sessions. Use it only when the environment already carries them. Never
+set them yourself as a prefix to the command in order to pass along a secret the
+user gave you — `FINANCY_CLIENT_SECRET=… financy setup --no-input` puts the
+secret in the command line, which defeats the whole point. In that situation the
+answer is always step 3: let the user run `financy setup` and type it.
 
 To see which endpoints and credential sources are in effect without exposing
 the secret:

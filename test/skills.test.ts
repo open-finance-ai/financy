@@ -141,14 +141,35 @@ describe('SKILL.md frontmatter', () => {
   })
 })
 
+const SKILL_NAMES = ['financy-setup', 'freshness-check']
+
 describe('bundled skill contents', () => {
   it('states the guardrails and a minimum CLI version in every skill', async () => {
-    for (const name of ['financy-setup', 'freshness-check']) {
+    for (const name of SKILL_NAMES) {
       const source = await readFile(join(BUNDLED, name, 'SKILL.md'), 'utf8')
       expect(source, `${name}: minimum version`).toMatch(/Minimum CLI version:/)
-      expect(source, `${name}: secret guardrail`).toMatch(/[Nn]ever echo the client secret/)
+      expect(source, `${name}: secret guardrail`).toMatch(/[Nn]ever (?:handle|echo).{0,20}client secret/)
       expect(source, `${name}: credit guardrail`).toMatch(/20 credits/)
       expect(source, `${name}: exit-4 guardrail`).toMatch(/open-finance\.ai/)
+    }
+  })
+
+  // A skill that tells an agent to inline the secret into a command puts it in the
+  // transcript, shell history and process list — the exact leak the guardrail
+  // forbids. Any `FINANCY_CLIENT_SECRET=` in a shell block must be an explicit
+  // counter-example, so require a nearby "never"/"not" for each occurrence.
+  it('never instructs an agent to pass the secret on a command line', async () => {
+    for (const name of SKILL_NAMES) {
+      const source = await readFile(join(BUNDLED, name, 'SKILL.md'), 'utf8')
+      const lines = source.split('\n')
+      lines.forEach((line, index) => {
+        if (!/FINANCY_CLIENT_SECRET\s*=/.test(line)) return
+        // Prose wraps, so look at the surrounding paragraph, not just this line.
+        const context = lines.slice(Math.max(0, index - 3), index + 2).join(' ')
+        expect(context, `${name}:${index + 1} unqualified secret on a command line`).toMatch(
+          /\b(?:[Nn]ever|not|defeats)\b/,
+        )
+      })
     }
   })
 })
