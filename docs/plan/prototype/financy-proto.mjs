@@ -253,7 +253,7 @@ switch (cmd) {
   }
 
   case 'update':
-    console.log(`${GREEN}✓${RESET} financy 1.0.0 → 1.1.2 (npm i -g @open-finance/cli)`)
+    console.log(`${GREEN}✓${RESET} financy 1.0.0 → 1.1.2 (npm i -g financy)`)
     process.exit(EXIT.OK)
 
   default:

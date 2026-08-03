@@ -56,7 +56,7 @@ export interface UpdateContext {
   err: (chunk: string) => void
 }
 
-const PACKAGE = '@open-finance/cli'
+const PACKAGE = 'financy'
 
 /** `financy update` — behaves per install mode (see {@link detectInstallMode}). */
 export async function updateCommand(ctx: UpdateContext): Promise<number> {

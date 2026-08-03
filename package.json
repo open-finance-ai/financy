@@ -1,11 +1,28 @@
 {
-  "name": "@open-finance/cli",
+  "name": "financy",
   "version": "0.1.0",
-  "description": "The financy command-line tool for Open-Finance / Financy users and their AI agents",
+  "description": "Your Open-Finance accounts, balances and transactions in the terminal — with an embedded MCP server and agent skills",
   "type": "module",
   "bin": {
     "financy": "dist/bin.js"
   },
+  "license": "Apache-2.0",
+  "author": "Open Finance AI <hello@open-finance.ai>",
+  "homepage": "https://github.com/open-finance-ai/financy#readme",
+  "bugs": {
+    "url": "https://github.com/open-finance-ai/financy/issues"
+  },
+  "keywords": [
+    "financy",
+    "open-finance",
+    "open-banking",
+    "cli",
+    "mcp",
+    "claude-code",
+    "agent-skills",
+    "fintech",
+    "israel"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/open-finance-ai/financy.git"
@@ -15,7 +32,8 @@
     "provenance": true
   },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "engines": {
     "node": ">=20"

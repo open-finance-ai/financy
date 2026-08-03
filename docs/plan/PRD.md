@@ -1,7 +1,9 @@
-# PRD: financy CLI v1 (`@open-finance/cli`)
+# PRD: financy CLI v1 (`financy` on npm)
 
 Status: ready-for-agent
-Source: wayfinder map [MAP.md](MAP.md) — every decision below links to a closed ticket holding its full detail.
+Source: the wayfinder map and the decision tickets behind each item below live in the
+team's internal docs space — they reference internal services and are not part of this
+public repo.
 
 ## Problem Statement
 
@@ -9,7 +11,7 @@ Financy users (paid starter/pro orgs) can only reach their aggregated Israeli ba
 
 ## Solution
 
-A new-repo TypeScript CLI, `financy`, published as `@open-finance/cli` on public npm — installable as `npx @open-finance/cli`, configured once with the credentials users already have in Financy → Settings → API. It fronts the accounts-aggregation read surface (connections, accounts, transactions, reference data), adds a `status` freshness rollup and a `refresh` command riding service-chat's initiated refresh, and is AI-first by construction: stable `--json` envelope, granular exit codes, an embedded MCP server (`financy mcp`), and seven agent skills distributed via the existing `@open-finance/skills` package.
+A new-repo TypeScript CLI, `financy`, published as `financy` on public npm — installable as `npx financy`, configured once with the credentials users already have in Financy → Settings → API. It fronts the accounts-aggregation read surface (connections, accounts, transactions, reference data), adds a `status` freshness rollup and a `refresh` command riding service-chat's initiated refresh, and is AI-first by construction: stable `--json` envelope, granular exit codes, an embedded MCP server (`financy mcp`), and agent skills bundled in the same package (`financy skills install`).
 
 ## User Stories
 
@@ -28,7 +30,7 @@ A new-repo TypeScript CLI, `financy`, published as `@open-finance/cli` on public
 13. As an AI agent, I want errors as structured JSON on stderr in `--json` mode, so that failure details are machine-readable.
 14. As an AI agent driving via shell, I want credentials read from config or `FINANCY_*` env vars and never required in argv, so that secrets don't leak into history or process lists.
 15. As an AI agent, I want an MCP server mode (`financy mcp`) with typed tools, so that MCP-native clients get the same data without shell plumbing.
-16. As a Claude Code user, I want `npx skills add @open-finance/skills` to teach my agent Financy jobs, so that "review my spending" just works.
+16. As a Claude Code user, I want `financy skills install --all` to teach my agent Financy jobs, so that "review my spending" just works.
 17. As an agent following the financy-setup skill, I want the exact onboarding steps (install → credentials → verify), so that I can onboard my user unattended.
 18. As a business owner, I want the cashflow-runway skill to compute monthly net and months-of-runway, so that I know how long our cash lasts.
 19. As a user, I want the recurring-charges skill to flag new or grown subscriptions, so that creep gets caught.
@@ -44,14 +46,14 @@ A new-repo TypeScript CLI, `financy`, published as `@open-finance/cli` on public
 
 Full detail lives in the linked tickets; this is the binding summary.
 
-- **Repo & stack** ([stack decision](issues/04-grilling-pick-stack-and-distribution.md)): new repo; TypeScript/Node (Node ≥20), commander; package `@open-finance/cli`, binary `financy`, public npm (org owns the `@open-finance` scope). No standalone binary in v1.
-- **Command surface** ([command surface](issues/03-grilling-v1-command-surface.md)): `setup`, `status`, `refresh`, `update`, `connections list|get`, `accounts list|get`, `transactions list|get`, `categories`, `providers list|branches`. Read-only apart from `refresh`. No payments/merchants, no deletes, no balance history.
-- **Auth** ([auth design](issues/05-grilling-auth-setup-and-credential-storage.md), [API research](research/01-api-surface.md)): Auth0 client-credentials grant with `userId` in the token body; no refresh token — cache token beside config, re-mint on `exp`/401. Config at `~/.config/financy/config.json` (0600), shaped `{profiles: {default}}`; `FINANCY_CLIENT_ID/SECRET/USER_ID` env vars override; headless setup via `--no-input` from env only. Setup validates (mint + one read); free-plan 403 saves creds but exits with the dedicated plan exit code.
-- **Interface contract** ([interface prototype](issues/06-prototype-cli-interface-design.md), assets in `prototype/`): human tables default, `--json` → `{data, count, nextPage}`; errors `{error:{code,message,…}}` on stderr; exit codes 0 ok / 1 unexpected / 2 usage / 3 auth / 4 plan / 5 credits / 6 not-found / 7 api-unavailable; flags `--from --to --account --connection --type --limit --all --cursor`; table padding by display width (Hebrew).
-- **Refresh** ([command surface](issues/03-grilling-v1-command-surface.md)): calls service-chat `POST /chat/connections/refresh` (20 credits, org-wide; accepted/already_running → exit 0, poll via `status`). **Backend prerequisite:** paid Financy org client-grants must gain the route's `create:ai-chat-message` scope — a dashboard grant-sync change; the only backend work in v1.
-- **MCP** ([MCP design](issues/07-grilling-mcp-server-design.md)): `financy mcp` stdio server, official TS SDK, config inherited from CLI; tools 1:1 verb_noun (`list_transactions`, `get_status`, …) with descriptions-as-spec; same envelope and default limit as the CLI; `refresh_connections` exposed with the 20-credit warning in its description.
-- **Skills** ([skills decision](issues/08-grilling-agent-skills-package.md)): live in existing `open-finance-ai/agent-skills` repo → `@open-finance/skills`; drive the CLI via Bash `--json` + exit codes (MCP mentioned as alternative); seven skills: financy-setup, spending-review, freshness-check, cashflow-runway, recurring-charges, card-cycle-review, income-summary; guardrails: never echo secrets, confirm credit-costing actions, exit 4 → upgrade path. Coordinate with Eliron (package owner).
-- **Release** ([release machinery](issues/10-grilling-release-and-update-machinery.md)): GH Actions publish on version tag with `--provenance`; plain semver + tags, hand CHANGELOG; `financy update` is install-mode-aware; `engines` + runtime Node check; no server-driven update signal.
+- **Repo & stack** (stack decision): new repo; TypeScript/Node (Node ≥20), commander; package and binary both named `financy`, public npm. No standalone binary in v1.
+- **Command surface** (command surface): `setup`, `status`, `refresh`, `update`, `connections list|get`, `accounts list|get`, `transactions list|get`, `categories`, `providers list|branches`. Read-only apart from `refresh`. No payments/merchants, no deletes, no balance history.
+- **Auth** (auth design, API research): Auth0 client-credentials grant with `userId` in the token body; no refresh token — cache token beside config, re-mint on `exp`/401. Config at `~/.config/financy/config.json` (0600), shaped `{profiles: {default}}`; `FINANCY_CLIENT_ID/SECRET/USER_ID` env vars override; headless setup via `--no-input` from env only. Setup validates (mint + one read); free-plan 403 saves creds but exits with the dedicated plan exit code.
+- **Interface contract** (interface prototype, assets in `prototype/`): human tables default, `--json` → `{data, count, nextPage}`; errors `{error:{code,message,…}}` on stderr; exit codes 0 ok / 1 unexpected / 2 usage / 3 auth / 4 plan / 5 credits / 6 not-found / 7 api-unavailable; flags `--from --to --account --connection --type --limit --all --cursor`; table padding by display width (Hebrew).
+- **Refresh** (command surface): calls service-chat `POST /chat/connections/refresh` (20 credits, org-wide; accepted/already_running → exit 0, poll via `status`). **Backend prerequisite:** paid Financy org client-grants must gain the route's `create:ai-chat-message` scope — a dashboard grant-sync change; the only backend work in v1.
+- **MCP** (MCP design): `financy mcp` stdio server, official TS SDK, config inherited from CLI; tools 1:1 verb_noun (`list_transactions`, `get_status`, …) with descriptions-as-spec; same envelope and default limit as the CLI; `refresh_connections` exposed with the 20-credit warning in its description.
+- **Skills** (skills decision, revised 2026-08-03): ship **inside this package** under `skills/`, installed with `financy skills install`; the separate `@open-finance/skills` package is deprecated in favour of one channel. They drive the CLI via Bash `--json` + exit codes (MCP mentioned as alternative). v1 ships `financy-setup` and `freshness-check`; the five analysis skills (spending-review, cashflow-runway, recurring-charges, card-cycle-review, income-summary) follow in a later release. Guardrails: never echo secrets, confirm credit-costing actions, exit 4 → upgrade path.
+- **Release** (release machinery): GH Actions publish on version tag with `--provenance`; plain semver + tags, hand CHANGELOG; `financy update` is install-mode-aware; `engines` + runtime Node check; no server-driven update signal.
 - **Telemetry & docs** (resolved in this ticket): no client telemetry — server-side User-Agent measurement only. Docs: repo README (full reference) + a page on docs-financy.open-finance.ai (install, credentials, links); Financy → Settings → API links to it.
 
 ## Testing Decisions

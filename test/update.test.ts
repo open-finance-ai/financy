@@ -6,7 +6,7 @@ describe('detectInstallMode', () => {
   it('detects npx from an _npx cache path', () => {
     expect(
       detectInstallMode({
-        moduleDir: '/Users/x/.npm/_npx/abc123/node_modules/@open-finance/cli/dist',
+        moduleDir: '/Users/x/.npm/_npx/abc123/node_modules/financy/dist',
         cwd: '/Users/x/project',
       }),
     ).toBe('npx')
@@ -15,7 +15,7 @@ describe('detectInstallMode', () => {
   it('detects npx from the npm_config_user_agent', () => {
     expect(
       detectInstallMode({
-        moduleDir: '/somewhere/node_modules/@open-finance/cli/dist',
+        moduleDir: '/somewhere/node_modules/financy/dist',
         cwd: '/Users/x/project',
         userAgent: 'npm/10.2.4 node/v20.11.0 darwin arm64 npx/10.2.4',
       }),
@@ -25,7 +25,7 @@ describe('detectInstallMode', () => {
   it('detects a local project dependency when installed under the cwd tree', () => {
     expect(
       detectInstallMode({
-        moduleDir: '/Users/x/project/node_modules/@open-finance/cli/dist',
+        moduleDir: '/Users/x/project/node_modules/financy/dist',
         cwd: '/Users/x/project/src',
       }),
     ).toBe('local')
@@ -34,7 +34,7 @@ describe('detectInstallMode', () => {
   it('detects a global install (node_modules outside the project tree)', () => {
     expect(
       detectInstallMode({
-        moduleDir: '/usr/local/lib/node_modules/@open-finance/cli/dist',
+        moduleDir: '/usr/local/lib/node_modules/financy/dist',
         cwd: '/Users/x/project',
       }),
     ).toBe('global')
@@ -97,7 +97,7 @@ describe('updateCommand', () => {
     const c = ctx('global', exec)
     const code = await updateCommand(c)
     expect(code).toBe(0)
-    expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@open-finance/cli@latest'])
+    expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', 'financy@latest'])
   })
 
   it('global mode: exits 1 with guidance when the install fails', async () => {
@@ -105,7 +105,7 @@ describe('updateCommand', () => {
     const c = ctx('global', exec)
     const code = await updateCommand(c)
     expect(code).toBe(1)
-    expect(c.stderr).toMatch(/npm install -g @open-finance\/cli/)
+    expect(c.stderr).toMatch(/npm install -g financy/)
   })
 })
 
@@ -134,6 +134,6 @@ describe('financy update (through run)', () => {
     expect(code).toBe(0)
     expect(stderr).toBe('')
     expect(stdout).not.toMatch(/not implemented/i)
-    expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@open-finance/cli@latest'])
+    expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', 'financy@latest'])
   })
 })

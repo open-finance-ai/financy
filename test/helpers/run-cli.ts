@@ -20,6 +20,8 @@ export async function runCli(
     prompt?: Prompt
     nodeVersion?: string
     exec?: (cmd: string, args: string[]) => Promise<number>
+    skillsRoot?: string
+    cwd?: string
   } = {},
 ): Promise<RunResult> {
   let stdout = ''
@@ -34,6 +36,8 @@ export async function runCli(
     prompt: opts.prompt,
     nodeVersion: opts.nodeVersion,
     exec: opts.exec,
+    skillsRoot: opts.skillsRoot,
+    cwd: opts.cwd,
     stdout: (chunk) => {
       stdout += chunk
     },
