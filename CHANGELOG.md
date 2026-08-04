@@ -6,6 +6,22 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-04
+
+No functional change. This is the first version published through CI with a
+verifiable build.
+
+### Changed
+
+- Published from GitHub Actions via npm **trusted publishing** (OIDC), so the
+  tarball carries a provenance attestation tying it to this repository, this
+  workflow file, and the commit it was built from. No npm token exists in the
+  repository or in any secret.
+- `0.1.0` was published manually to bootstrap the package name — npm cannot
+  configure a trusted publisher for a package that does not exist yet
+  ([npm/cli#8544](https://github.com/npm/cli/issues/8544)) — and therefore has
+  **no** attestation. Prefer `0.1.1` or later.
+
 ## [0.1.0] — 2026-08-03
 
 First public release of the `financy` CLI (v1).
@@ -38,5 +54,6 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.1
 [0.1.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.0

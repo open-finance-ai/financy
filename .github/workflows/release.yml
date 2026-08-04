@@ -19,6 +19,9 @@ jobs:
           node-version: 22.x
           registry-url: 'https://registry.npmjs.org'
           cache: npm
+      # setup-node ships npm 10.x with Node 22; OIDC trusted publishing needs
+      # 11.5.1+. Stay on the 11.x line — npm 12 requires a newer Node than this job runs.
+      - run: npm install -g npm@^11.6.1
       - run: npm ci
       # Re-run the full gate so a tag can never publish something CI would reject.
       - run: npm run lint
@@ -34,6 +37,6 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match package.json version $PKG"
             exit 1
           fi
+      # No NODE_AUTH_TOKEN: auth is npm trusted publishing (OIDC), bound to this
+      # repository and this workflow file. There is no npm token anywhere in the repo.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
