@@ -6,6 +6,25 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-08-05
+
+No change to the command surface. Dependency updates and packaging.
+
+### Changed
+
+- Updated `@modelcontextprotocol/sdk` and its `hono` / `@hono/node-server` /
+  `ip-address` transitive dependencies, clearing the runtime-scope advisories.
+  The remaining advisories are development-only (`vitest`, `vite`, `esbuild`),
+  also updated here — they are not part of the published package.
+- The README now carries the Financy logo, so it appears on both the repository
+  front page and the npm package page.
+
+### Removed
+
+- The internal planning documents (`docs/plan`) that shipped with the repository.
+  They described intended rather than actual behaviour; the README is the
+  reference. They were never part of the published package.
+
 ## [0.1.1] — 2026-08-04
 
 No functional change. This is the first version published through CI with a
@@ -54,6 +73,7 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.2
 [0.1.1]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.1
 [0.1.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.0
