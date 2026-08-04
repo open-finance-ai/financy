@@ -1,3 +1,17 @@
+<!-- Absolute raw URLs, not relative paths: npm does not resolve relative image
+     paths when it renders this README on the package page. <picture> gives GitHub
+     a theme-aware logo; npm strips <source> but keeps the <img>, so the light-mode
+     logo is the fallback and reads correctly on npm's white page. -->
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="https://raw.githubusercontent.com/open-finance-ai/financy/main/assets/logo-dark.png">
+  <img
+    src="https://raw.githubusercontent.com/open-finance-ai/financy/main/assets/logo-light.png"
+    alt="Financy"
+    width="240">
+</picture>
+
 # financy
 
 Your Open-Finance / Financy banking data — connections, accounts, balances,
