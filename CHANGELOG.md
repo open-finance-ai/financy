@@ -35,7 +35,7 @@ First public release of the `financy` CLI (v1).
   mint + a read.
 - Read surface: `connections`, `accounts`, `transactions` (`list`/`get`), `categories`,
   `providers list|branches` — with `--limit`, `--cursor`, `--all`, and resource filters.
-- `financy refresh` — org-wide on-demand refresh via service-chat (20 credits);
+- `financy refresh` — org-wide on-demand refresh (20 credits);
   maps insufficient-credits (exit 5) and no-refreshable-connections (exit 1).
 - `financy mcp` — stdio MCP server exposing the command surface 1:1 as eleven
   `verb_noun` tools with the same `{data, …}` envelopes.

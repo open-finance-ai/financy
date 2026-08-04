@@ -128,12 +128,6 @@ FINANCY_AUTH_URL=… FINANCY_API_URL=… FINANCY_CHAT_URL=… FINANCY_AUDIENCE=�
 npm run smoke
 ```
 
-## Spec & design
-
-- **Spec:** [docs/plan/PRD.md](docs/plan/PRD.md)
-- **Build issues:** [docs/plan/build-issues/](docs/plan/build-issues/)
-- **Interface reference** (locked runnable prototype): [docs/plan/prototype/](docs/plan/prototype/)
-
 ## License
 
 [Apache-2.0](LICENSE)
