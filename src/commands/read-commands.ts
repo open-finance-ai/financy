@@ -1,6 +1,5 @@
 import type { Command } from 'commander'
-import { loadConfig, type Config } from '../config.js'
-import { CliError } from '../errors.js'
+import { loadConfig, notConfigured, type Config } from '../config.js'
 import { EXIT } from '../exit-codes.js'
 import type { Column } from '../render.js'
 import type { Connection } from '../api.js'
@@ -26,13 +25,7 @@ export interface ReadBase {
 
 async function loadOrThrow(env: NodeJS.ProcessEnv): Promise<Config> {
   const result = await loadConfig(env)
-  if (!result.ok) {
-    throw new CliError(
-      EXIT.AUTH,
-      'NOT_CONFIGURED',
-      `missing ${result.missing.join(', ')} — run financy setup`,
-    )
-  }
+  if (!result.ok) throw notConfigured(result)
   return result.config
 }
 

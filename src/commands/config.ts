@@ -1,4 +1,5 @@
 import { resolveEndpoints, readCredentialsFile } from '../config.js'
+import { sanitizeCredential } from '../credentials.js'
 import { EXIT } from '../exit-codes.js'
 
 export interface ConfigContext {
@@ -22,12 +23,19 @@ function maskId(v: string | undefined): string {
  */
 export async function configCommand(ctx: ConfigContext): Promise<number> {
   const endpoints = resolveEndpoints(ctx.env)
-  const file = (await readCredentialsFile(endpoints.configDir)) ?? {}
+  const fileResult = await readCredentialsFile(endpoints.configDir)
+  const file = fileResult.status === 'ok' ? fileResult.credentials : {}
+  const fileStatus =
+    fileResult.status === 'ok'
+      ? 'ok'
+      : fileResult.status === 'missing'
+        ? 'not created yet — run financy setup'
+        : `${fileResult.status}: ${fileResult.detail}`
 
   const resolve = (envKey: string, fileVal?: string): { value?: string; source: Source } => {
     const envVal = ctx.env[envKey]
-    if (envVal) return { value: envVal, source: 'env' }
-    if (fileVal) return { value: fileVal, source: 'file' }
+    if (envVal) return { value: sanitizeCredential(envVal), source: 'env' }
+    if (fileVal) return { value: sanitizeCredential(fileVal), source: 'file' }
     return { source: 'unset' }
   }
   const clientId = resolve('FINANCY_CLIENT_ID', file.clientId)
@@ -39,6 +47,7 @@ export async function configCommand(ctx: ConfigContext): Promise<number> {
       JSON.stringify(
         {
           configDir: endpoints.configDir,
+          configFileStatus: fileStatus,
           authTokenUrl: endpoints.authTokenUrl,
           apiBaseUrl: endpoints.apiBaseUrl,
           chatBaseUrl: endpoints.chatBaseUrl,
@@ -46,6 +55,9 @@ export async function configCommand(ctx: ConfigContext): Promise<number> {
           clientIdSource: clientId.source,
           clientSecretSet: clientSecret.source !== 'unset',
           clientSecretSource: clientSecret.source,
+          // Length only — enough to spot a truncated or half-pasted secret, which
+          // is otherwise indistinguishable from a wrong one behind a 401.
+          clientSecretLength: clientSecret.value?.length ?? 0,
           userId: userId.value ?? null,
           userIdSource: userId.source,
         },
@@ -60,12 +72,17 @@ export async function configCommand(ctx: ConfigContext): Promise<number> {
     'financy configuration',
     '',
     `  config dir     ${endpoints.configDir}`,
+    `  config file    ${fileStatus}`,
     `  auth url       ${endpoints.authTokenUrl}`,
     `  api url        ${endpoints.apiBaseUrl}`,
     `  chat url       ${endpoints.chatBaseUrl}`,
     '',
     `  clientId       ${maskId(clientId.value)}  (${clientId.source})`,
-    `  clientSecret   ${clientSecret.source !== 'unset' ? '•••••••• (set)' : '(unset)'}  (${clientSecret.source})`,
+    `  clientSecret   ${
+      clientSecret.value
+        ? `•••••••• (set, ${clientSecret.value.length} chars)`
+        : '(unset)'
+    }  (${clientSecret.source})`,
     `  userId         ${userId.value ?? '(unset)'}  (${userId.source})`,
   ]
   ctx.out(lines.join('\n') + '\n')
