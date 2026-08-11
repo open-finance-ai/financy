@@ -56,7 +56,10 @@ describe('token cache', () => {
     // Token cached beside config with owner-only permissions.
     const tokenFile = join(configDir, 'token.json')
     expect(existsSync(tokenFile)).toBe(true)
-    expect(statSync(tokenFile).mode & 0o777).toBe(0o600)
+    // Windows does not enforce Unix file modes, so the bits mean nothing there.
+    if (process.platform !== 'win32') {
+      expect(statSync(tokenFile).mode & 0o777).toBe(0o600)
+    }
   })
 
   it('re-mints when the cached token has already expired', async () => {

@@ -49,7 +49,10 @@ describe('financy setup --no-input', () => {
 
     const file = join(testConfigDir(), 'config.json')
     expect(existsSync(file)).toBe(true)
-    expect(statSync(file).mode & 0o777).toBe(0o600)
+    // Windows does not enforce Unix file modes, so the bits mean nothing there.
+    if (process.platform !== 'win32') {
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+    }
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({
       profiles: { default: { clientId: 'cid', clientSecret: 'secret', userId: 'uid' } },
     })
