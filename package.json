@@ -1,6 +1,6 @@
 {
   "name": "financy",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Your Open-Finance accounts, balances and transactions in the terminal — with an embedded MCP server and agent skills",
   "type": "module",
   "bin": {
