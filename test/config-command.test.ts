@@ -54,6 +54,6 @@ describe('financy config', () => {
     expect(code).toBe(0)
     expect(stdout).toContain('config dir')
     expect(stdout).not.toContain('TOPSECRET')
-    expect(stdout).toContain('(set)')
+    expect(stdout).toContain('(set, 9 chars)')
   })
 })

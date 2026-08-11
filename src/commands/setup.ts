@@ -6,6 +6,7 @@ import {
   type Credentials,
 } from '../config.js'
 import { mintToken } from '../auth.js'
+import { sanitizeCredential } from '../credentials.js'
 import { getConnections } from '../api.js'
 import { CliError } from '../errors.js'
 import { EXIT } from '../exit-codes.js'
@@ -17,6 +18,8 @@ export interface SetupContext {
   prompt: Prompt
   out: (chunk: string) => void
   err: (chunk: string) => void
+  /** `process.platform`, injectable in tests. Only affects what we claim about file modes. */
+  platform?: string
 }
 
 /** Where the three credential values come from — shown before interactive prompts. */
@@ -46,21 +49,31 @@ export async function setupCommand(ctx: SetupContext): Promise<number> {
     if (error instanceof CliError && error.code === 'NOT_AVAILABLE_ON_PLAN') {
       await writeCredentialsFile(endpoints.configDir, credentials)
     }
-    // Bad credentials (exit 3) / network (exit 7): do not persist.
+    // Bad credentials (exit 3) / network (exit 7): do not persist. Say so — the
+    // silence here read as success, and users went on believing their credentials
+    // were stored while `financy config` showed everything unset.
+    else {
+      ctx.err(
+        '✗ Nothing was saved. financy setup writes the config file only after the\n' +
+          '  credentials validate against the API. The failure was:\n',
+      )
+    }
     throw error
   }
 
   await writeCredentialsFile(endpoints.configDir, credentials)
+  // File modes are not enforced on Windows, so do not claim they are.
+  const perms = (ctx.platform ?? process.platform) === 'win32' ? '' : ' (permissions 600)'
   ctx.out(
-    `✓ Saved to ${join(endpoints.configDir, 'config.json')} (permissions 600)\n\nTry: financy status\n`,
+    `✓ Saved to ${join(endpoints.configDir, 'config.json')}${perms}\n\nTry: financy status\n`,
   )
   return EXIT.OK
 }
 
 function credentialsFromEnv(env: NodeJS.ProcessEnv): Credentials {
-  const clientId = env.FINANCY_CLIENT_ID
-  const clientSecret = env.FINANCY_CLIENT_SECRET
-  const userId = env.FINANCY_USER_ID
+  const clientId = sanitizeCredential(env.FINANCY_CLIENT_ID ?? '')
+  const clientSecret = sanitizeCredential(env.FINANCY_CLIENT_SECRET ?? '')
+  const userId = sanitizeCredential(env.FINANCY_USER_ID ?? '')
   if (!clientId || !clientSecret || !userId) {
     throw new CliError(
       EXIT.USAGE,

@@ -30,6 +30,9 @@ These are not optional and they apply to every step below.
   pastes it anyway, do not repeat it, do not use it in a command, and tell them
   to rotate it in Financy → Settings → API. Never print it, read it back for
   confirmation, or include it in a summary, and never `cat` the config file.
+  If `setup` warns that the input is **not masked** (a terminal where Node cannot
+  hide input, e.g. Git Bash / mintty, where stdin is a pipe), tell the user to run
+  it in PowerShell or Windows Terminal instead of typing the secret in the clear.
 - **Confirm before spending credits.** `financy refresh` costs 20 credits per
   run. Never run it without the user explicitly agreeing to that cost in this
   conversation.
@@ -95,7 +98,18 @@ where to find the three values: the Financy app → **Settings → API**.
 
 `setup` validates the credentials against the live API before saving, so a wrong
 value fails immediately rather than on their first real command. On success it
-writes `~/.config/financy/config.json` with permissions `600` and prints the path.
+writes `~/.config/financy/config.json` and prints the path — permissions `600` on
+macOS/Linux; on Windows the path is
+`%USERPROFILE%\.config\financy\config.json` and file modes are not enforced.
+
+A **failed** `setup` writes nothing at all. If the user believes they entered the
+credentials but `financy config` shows them unset, setup did not get past
+validation — do not go looking for a file-reading problem.
+
+On Windows the secret prompt prints one `*` per character. If the user says they
+pasted and saw no `*`s, their console did not paste: the legacy Windows console
+ignores **Ctrl+V** at a prompt. Tell them to use **right-click** or
+**Ctrl+Shift+V**, or to type the value.
 
 Ask the user to tell you the exit code or what it printed — that is all you need.
 Do not ask them to paste any of the three values.
@@ -103,8 +117,12 @@ Do not ask them to paste any of the three values.
 Exit codes from `setup`:
 
 - `0` — saved and verified.
-- `3` — the credentials were rejected. Ask them to run `financy setup` again and
-  re-copy the values; a partial paste or a stray space is the usual cause.
+- `3` — the credentials were rejected, and nothing was saved. Ask them to run
+  `financy setup` again and re-copy the values; a partial paste is the usual
+  cause (surrounding whitespace and wrapping quotes are stripped automatically).
+  Have them check that `Client ID` and `User ID` did not go into each other's
+  prompt — `financy config` shows the `userId` in the clear, so a swap is visible
+  there.
 - `4` — the credentials are valid but the plan is not eligible. The CLI still
   saves them so a later upgrade works immediately. Go to *Handling exit 4*.
 - `7` — the API could not be reached. This is a network or endpoint problem, not
@@ -160,8 +178,11 @@ the secret:
 financy config
 ```
 
-It prints the resolved endpoints and marks each credential as coming from the
-environment or the config file, with the secret masked.
+It prints the resolved endpoints, the state of the config file (`ok`, `missing`,
+`malformed`, `unreadable`), and marks each credential as coming from the
+environment or the config file. The secret is never printed — only its length,
+which is enough to spot a truncated paste. This is the first command to run when a
+user reports a `401`.
 
 ## MCP alternative
 

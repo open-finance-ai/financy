@@ -1,5 +1,5 @@
 import { Command, CommanderError } from 'commander'
-import { loadConfig } from './config.js'
+import { loadConfig, notConfigured } from './config.js'
 import { statusCommand } from './commands/status.js'
 import { setupCommand } from './commands/setup.js'
 import { configCommand } from './commands/config.js'
@@ -80,13 +80,7 @@ export async function run(argv: string[], io: RunIO = {}): Promise<number> {
     .option('--json', 'machine-readable output (stable schema, errors as JSON on stderr)')
     .action(async () => {
       const result = await loadConfig(env)
-      if (!result.ok) {
-        throw new CliError(
-          EXIT.AUTH,
-          'NOT_CONFIGURED',
-          `missing ${result.missing.join(', ')} — run financy setup`,
-        )
-      }
+      if (!result.ok) throw notConfigured(result)
       exitCode = await statusCommand({ config: result.config, json, now, out, err })
     })
 
@@ -110,13 +104,7 @@ export async function run(argv: string[], io: RunIO = {}): Promise<number> {
     .option('--json', 'machine-readable output')
     .action(async () => {
       const result = await loadConfig(env)
-      if (!result.ok) {
-        throw new CliError(
-          EXIT.AUTH,
-          'NOT_CONFIGURED',
-          `missing ${result.missing.join(', ')} — run financy setup`,
-        )
-      }
+      if (!result.ok) throw notConfigured(result)
       exitCode = await refreshCommand({ config: result.config, json, now, out })
     })
 

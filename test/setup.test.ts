@@ -49,23 +49,28 @@ describe('financy setup --no-input', () => {
 
     const file = join(testConfigDir(), 'config.json')
     expect(existsSync(file)).toBe(true)
-    expect(statSync(file).mode & 0o777).toBe(0o600)
+    // Windows does not enforce Unix file modes, so the bits mean nothing there.
+    if (process.platform !== 'win32') {
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+    }
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({
       profiles: { default: { clientId: 'cid', clientSecret: 'secret', userId: 'uid' } },
     })
   })
 
-  it('exits 3 and writes no config when credentials are invalid', async () => {
+  it('exits 3, writes no config, and says nothing was saved when credentials are invalid', async () => {
     const { pool, close } = mockApi()
     teardown = close
     pool
       .intercept({ path: '/oauth/token', method: 'POST' })
       .reply(401, { error: 'access_denied' })
 
-    const { code } = await runCli(['setup', '--no-input'], { env: CREDS })
+    const { code, stderr } = await runCli(['setup', '--no-input'], { env: CREDS })
 
     expect(code).toBe(3)
     expect(existsSync(join(testConfigDir(), 'config.json'))).toBe(false)
+    // A silent non-save is what made a failed setup look like a successful one.
+    expect(stderr).toMatch(/Nothing was saved/)
   })
 
   it.each(['--client-secret', '--client-id', '--user-id'])(

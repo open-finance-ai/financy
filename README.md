@@ -50,7 +50,25 @@ financy setup --no-input      # read FINANCY_CLIENT_ID / _SECRET / _USER_ID from
 
 `setup` validates the credentials against the live API before saving, so an
 unregistered/free account is caught immediately (exit `3` for bad credentials,
-`4` for an ineligible plan).
+`4` for an ineligible plan). Validation happens **before** anything is written —
+a failed `setup` saves nothing and says so.
+
+### Windows
+
+The secret prompt echoes one `*` per accepted character, so you can see the value
+arriving. If you paste and no `*`s appear, your console did not paste: the legacy
+Windows console does not accept **Ctrl+V** at a prompt — use **right-click** or
+**Ctrl+Shift+V**. A silently dropped paste used to be submitted as a mangled
+secret and come back as a `401`.
+
+The config file lives at `%USERPROFILE%\.config\financy\config.json`. Windows does
+not enforce Unix file modes, so it is not restricted to your user the way it is on
+macOS/Linux — treat it as readable by anything running as you.
+
+If you hand-edit that file, note that PowerShell 5.1's `>` and `Out-File` write
+UTF-16 and `Set-Content` writes a UTF-8 BOM. The CLI now reads all three, but
+`financy config` is the way to check: it reports the file as `ok`, `missing`,
+`malformed`, or `unreadable` rather than just showing blank credentials.
 
 ## Commands
 

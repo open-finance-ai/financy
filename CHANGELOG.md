@@ -6,6 +6,34 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Windows: `setup` could submit a mangled secret and fail with `401`.** The masked
+  prompt relied on readline's internal write path with `terminal: true`, which behaves
+  differently across Windows consoles, and echoed nothing at all — so a Ctrl+V that
+  the legacy console never turned into a paste was submitted as a bare control byte
+  with no visible sign. The prompt now reads raw keystrokes itself, echoes one `*` per
+  accepted character, drops control bytes and escape sequences, and points at
+  right-click / Ctrl+Shift+V when it sees a keystroke that entered no text.
+- Credentials from every source (prompt, env, config file) are normalized: control
+  characters stripped, whitespace trimmed, and one layer of wrapping quotes removed —
+  so `set X="v"` and a trailing space copied with the line no longer cause a `401`.
+- A failed `setup` now says explicitly that **nothing was saved**, instead of leaving
+  users believing their credentials were stored.
+- The config file is read even when written as UTF-16 or with a UTF-8 BOM (what
+  PowerShell's `>`, `Out-File`, and `Set-Content` produce), and a file that cannot be
+  used is reported as `malformed`/`unreadable` instead of silently showing every
+  credential as unset.
+- `setup` no longer claims `permissions 600` on Windows, where file modes are not
+  enforced.
+
+### Added
+
+- `financy config` reports the config file's state (`ok` / `missing` / `malformed` /
+  `unreadable`) and the client secret's length — enough to spot a truncated paste
+  without printing the secret.
+- CI runs on `windows-latest` as well as Ubuntu, and on Node 24 alongside 20 and 22.
+
 ## [0.1.2] — 2026-08-05
 
 No change to the command surface. Dependency updates and packaging.
