@@ -6,6 +6,11 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-08-11
+
+The Windows release: `setup` could not reliably collect a client secret there,
+and every failure mode around it was invisible.
+
 ### Fixed
 
 - **Windows: `setup` could submit a mangled secret and fail with `401`.** The masked
