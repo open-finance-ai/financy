@@ -40,6 +40,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "build:lambda": "tsup --config tsup.lambda.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -49,7 +50,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "jose": "^6.2.9"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

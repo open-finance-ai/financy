@@ -78,7 +78,10 @@ export async function getPage<T = unknown>(
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined) url.searchParams.set(key, value)
   }
-  const res = await httpFetch(url.toString(), { headers: authHeaders(token) })
+  const res = await httpFetch(url.toString(), {
+    headers: authHeaders(token),
+    signal: config.abortSignal,
+  })
   await ensureOk(res)
   const raw = (await res.json().catch(() => ({}))) as unknown
   debugBody(path, raw)
@@ -107,7 +110,10 @@ export async function getById<T = unknown>(
   token: string,
   path: string,
 ): Promise<T | null> {
-  const res = await httpFetch(config.apiBaseUrl + path, { headers: authHeaders(token) })
+  const res = await httpFetch(config.apiBaseUrl + path, {
+    headers: authHeaders(token),
+    signal: config.abortSignal,
+  })
   if (res.status === 404) return null
   await ensureOk(res)
   const body = (await res.json()) as T
@@ -136,6 +142,7 @@ export async function postRefresh(
   const res = await httpFetch(config.chatBaseUrl + '/connections/refresh', {
     method: 'POST',
     headers: authHeaders(token),
+    signal: config.abortSignal,
   })
   if (res.status === 401) throw authFailed()
   if (res.status === 402) {

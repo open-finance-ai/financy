@@ -88,6 +88,8 @@ export async function authorized<T>(
   now: Date,
   request: (token: string) => Promise<T>,
 ): Promise<T> {
+  if (config.bearerToken) return request(config.bearerToken)
+
   const token = await getAccessToken(config, now)
   try {
     return await request(token)
