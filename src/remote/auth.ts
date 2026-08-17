@@ -19,7 +19,7 @@ export function remoteAuthFromEnv(
   const issuer = `https://${domain}/`
   return {
     issuer,
-    audience: env.FINANCY_MCP_AUDIENCE ?? 'https://mcp.open-finance.ai',
+    audience: env.FINANCY_MCP_AUDIENCE ?? 'https://mcp.open-finance.ai/',
     getKey: getKey ?? createRemoteJWKSet(new URL(`${issuer}.well-known/jwks.json`)),
   }
 }

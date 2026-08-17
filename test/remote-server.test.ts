@@ -7,7 +7,7 @@ import { startRemoteServer, METADATA_PATH } from '../src/remote/server.js'
 
 const AUTH0_DOMAIN = 'stg-tenant.us.auth0.com'
 const ISSUER = `https://${AUTH0_DOMAIN}/`
-const AUDIENCE = 'https://mcp.open-finance.ai'
+const AUDIENCE = 'https://mcp.open-finance.ai/'
 const API_ORIGIN = 'https://api.open-finance.ai'
 
 type SigningKey = Awaited<ReturnType<typeof generateKeyPair>>['privateKey']
