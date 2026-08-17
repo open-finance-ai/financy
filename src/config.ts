@@ -18,12 +18,16 @@ export interface Endpoints {
   configDir: string
 }
 
-export type Config = Credentials & Endpoints
+export type Config = Credentials &
+  Endpoints & {
+    bearerToken?: string
+    abortSignal?: AbortSignal
+  }
 
 const DEFAULT_AUTH_TOKEN_URL = 'https://api.open-finance.ai/oauth/token'
 const DEFAULT_API_BASE_URL = 'https://api.open-finance.ai/v2'
-// service-chat's initiated-refresh route lives outside the /v2 base path, under
-// the doubled /chat/chat prefix (gateway stage + service base path).
+// The initiated-refresh route lives outside the /v2 base path, under the
+// doubled /chat/chat prefix (gateway stage + service base path).
 const DEFAULT_CHAT_BASE_URL = 'https://api.open-finance.ai/chat/chat'
 
 function resolveConfigDir(env: NodeJS.ProcessEnv): string {
@@ -118,6 +122,21 @@ export async function writeCredentialsFile(
     JSON.stringify({ profiles: { default: credentials } }, null, 2),
     { mode: 0o600 },
   )
+}
+
+export function bearerConfig(
+  env: NodeJS.ProcessEnv,
+  bearerToken: string,
+  abortSignal?: AbortSignal,
+): Config {
+  return {
+    ...resolveEndpoints(env),
+    clientId: '',
+    clientSecret: '',
+    userId: '',
+    bearerToken,
+    abortSignal,
+  }
 }
 
 export type ConfigResult =

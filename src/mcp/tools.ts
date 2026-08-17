@@ -186,6 +186,7 @@ function errorEnvelope(error: unknown): { error: Record<string, unknown> } {
 export interface CallToolIO {
   env: NodeJS.ProcessEnv
   now?: Date
+  config?: Config
 }
 
 /**
@@ -204,9 +205,14 @@ export async function callTool(
     if (!tool) {
       throw new CliError(EXIT.USAGE, 'UNKNOWN_TOOL', `no tool named '${name}'`)
     }
-    const result = await loadConfig(io.env)
-    if (!result.ok) throw notConfigured(result)
-    return await tool.run(args ?? {}, { config: result.config, now: io.now ?? new Date() })
+    let config = io.config
+
+    if (!config) {
+      const result = await loadConfig(io.env)
+      if (!result.ok) throw notConfigured(result)
+      config = result.config
+    }
+    return await tool.run(args ?? {}, { config, now: io.now ?? new Date() })
   } catch (error) {
     return errorEnvelope(error)
   }
