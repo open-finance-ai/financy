@@ -107,7 +107,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'list_transactions',
     description:
-      'List transactions, most useful with filters: from/to (YYYY-MM-DD), account, connection, type (BANK|CARD). Page with limit/cursor or fetch everything with all. Hebrew merchant names are returned as-is.',
+      'List transactions, most useful with filters: from/to (YYYY-MM-DD), account, connection, type (BANK|CARD). Page with limit/cursor or fetch everything with all. Hebrew merchant names are returned as-is. To then read one transaction, pass its `SK` (not its `id`) to get_transaction.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -131,8 +131,19 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'get_transaction',
-    description: 'Read a single transaction by id (from list_transactions). Errors TRANSACTION_NOT_FOUND if not in scope.',
-    inputSchema: idSchema('transaction'),
+    description:
+      'Read a single transaction by its `SK` — the composite key from list_transactions, NOT the short `id` field, which this route does not accept. Errors TRANSACTION_NOT_FOUND if not in scope.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description:
+            'the transaction\'s `SK` from list_transactions, e.g. "TRANSACTION#TYPE#CHECKING#PROVIDER#leumi#RESOURCE<uuid>#<ulid>". The short `id` field of the same transaction will NOT resolve.',
+        },
+      },
+      required: ['id'],
+    },
     run: (a, ctx) => fetchTransaction(ctx.config, ctx.now, requireId(a)),
   },
   {

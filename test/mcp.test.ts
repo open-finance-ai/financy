@@ -167,3 +167,45 @@ describe('mcp get_* tools', () => {
     expect(result).toMatchObject({ error: { code: 'MISSING_ARGUMENT' } })
   })
 })
+
+describe('mcp get_transaction is keyed by SK, not by id', () => {
+  // A transaction's `id` is a bare ULID; the route is keyed by the composite
+  // sort key that list_transactions returns as `SK`.
+  const ID = '01M07TQV1M36PXZSVHAHGH30W2'
+  const SK = `TRANSACTION#TYPE#CHECKING#PROVIDER#leumi#RESOURCE6dabb2ea-2b7b-4b39-bf16-6dc6ebe3f2ff#${ID}`
+
+  it('names SK as the value to pass, in both the description and the arg', () => {
+    const tool = TOOLS.find((t) => t.name === 'get_transaction')!
+    const idArg = tool.inputSchema.properties.id as { description?: string }
+
+    expect(tool.description).toMatch(/\bSK\b/)
+    expect(idArg.description).toMatch(/\bSK\b/)
+  })
+
+  it('rejects a bare id with an actionable error instead of an opaque not-found', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+
+    const result = await callTool('get_transaction', { id: ID }, { env: env() })
+
+    expect(result).toMatchObject({ error: { code: 'INVALID_ARGUMENT' } })
+    expect((result as { error: { message: string } }).error.message).toMatch(/\bSK\b/)
+  })
+
+  it('sends a full SK upstream, percent-encoded', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+    let seenPath = ''
+    pool.intercept({ path: /\/v2\/data\/transactions\//, method: 'GET' }).reply((opts) => {
+      seenPath = opts.path
+      return { statusCode: 200, data: JSON.stringify({ id: ID }) }
+    })
+
+    const result = await callTool('get_transaction', { id: SK }, { env: env() })
+
+    expect(seenPath).toContain(encodeURIComponent(SK))
+    expect(result).toEqual({ data: { id: ID } })
+  })
+})
