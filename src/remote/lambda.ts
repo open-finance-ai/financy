@@ -42,6 +42,9 @@ export function createLambdaHandler(
     for (const [name, value] of Object.entries(event.headers ?? {})) {
       if (value !== undefined && !HOP_HEADERS.has(name.toLowerCase())) headers.set(name, value)
     }
+    if (!headers.has('x-forwarded-host') && event.headers?.host) {
+      headers.set('x-forwarded-host', event.headers.host)
+    }
 
     const method = event.requestContext.http.method
     const body = event.body === undefined || method === 'GET' || method === 'HEAD'

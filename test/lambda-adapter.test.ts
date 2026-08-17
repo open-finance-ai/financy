@@ -58,6 +58,20 @@ describe('lambda adapter', () => {
       .toBe(`Bearer resource_metadata="https://mcp-stg.open-finance.ai${METADATA_PATH}"`)
   })
 
+  it('falls back to the event host for the metadata hint when x-forwarded-host is absent', async () => {
+    const res = await handler(event({
+      headers: {
+        host: 'abc.lambda-url.eu-west-1.on.aws',
+        'x-forwarded-proto': 'https',
+        'content-type': 'application/json',
+      },
+      body: '{}',
+    }))
+    expect(res.statusCode).toBe(401)
+    expect(res.headers['www-authenticate'])
+      .toBe(`Bearer resource_metadata="https://abc.lambda-url.eu-west-1.on.aws${METADATA_PATH}"`)
+  })
+
   it('decodes base64 bodies before the server parses them', async () => {
     const res = await handler(event({
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },

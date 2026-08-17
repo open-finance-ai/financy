@@ -13,10 +13,16 @@ export default {
     upstream.headers.set('x-forwarded-host', inUrl.hostname)
 
     const response = await fetch(upstream)
+    const headers = new Headers(response.headers)
+    const remapped = headers.get('x-amzn-remapped-www-authenticate')
+    if (remapped) {
+      headers.set('www-authenticate', remapped)
+      headers.delete('x-amzn-remapped-www-authenticate')
+    }
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
+      headers,
     })
   },
 }
