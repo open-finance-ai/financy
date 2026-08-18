@@ -3,4 +3,4 @@ dist/
 *.log
 .DS_Store
 dist-lambda/
-docs/plan/mcp-connector/
+docs/

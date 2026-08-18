@@ -1,0 +1,76 @@
+name: Deploy remote MCP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsup.lambda.config.ts'
+      - '.github/workflows/deploy-mcp.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which MCP deployment to update'
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-mcp-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Build the Lambda bundle
+        run: npm run build:lambda
+
+      - name: Zip the bundle
+        run: cd dist-lambda && zip -q function.zip index.mjs
+
+      - name: Assume the deploy role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-deploy-mcp-${{ github.run_id }}
+
+      - name: Update the function code
+        env:
+          FUNCTION_NAME: ${{ vars.MCP_FUNCTION_NAME }}
+        run: |
+          aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --zip-file fileb://dist-lambda/function.zip \
+            --output text --query 'LastUpdateStatus'
+          aws lambda wait function-updated-v2 --function-name "$FUNCTION_NAME"
+
+      - name: Verify the deployment serves
+        env:
+          URL: ${{ vars.MCP_PUBLIC_URL }}
+        run: |
+          BODY="$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors \
+            "$URL/.well-known/oauth-protected-resource")"
+          echo "$BODY"
+          echo "$BODY" | grep -q "$URL" || {
+            echo "::error::protected-resource metadata did not advertise $URL"
+            exit 1
+          }
