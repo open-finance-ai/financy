@@ -6,6 +6,33 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-18
+
+Transaction lookups were keyed by the wrong field, and the package became
+importable so an out-of-process host can serve the same MCP tools.
+
+### Added
+
+- **The package is now importable**, not just a `bin`. `import { TOOLS, callTool,
+  bearerConfig, VERSION } from 'financy'` exposes the tool table, the dispatcher, a
+  config built from a caller's bearer token, and the version — exactly what a remote
+  MCP host needs to serve the same tools this CLI serves. Everything else stays
+  internal so it can change without a breaking release. Type declarations ship too.
+
+### Fixed
+
+- **`transactions get` rejected the only identifier the CLI showed you.** A
+  transaction's `id` is a bare ULID, but the route is keyed by the composite sort key
+  the API returns as `SK`. `transactions list` printed the `id`, so pasting it into
+  `transactions get` always failed with `TRANSACTION_NOT_FOUND` — which reads as a
+  permissions problem rather than the wrong field. The list now prints the `SK`, the
+  way the accounts and connections tables print the value their `get` accepts, and a
+  bare `id` fails as `INVALID_ARGUMENT` naming the field to use instead.
+- **The `get_transaction` MCP tool advertised the wrong argument.** Its schema
+  described `id` as "the transaction id", so an agent reading `.id` off
+  `list_transactions` could never resolve a transaction. Both the tool description and
+  the argument now name `SK`, and `list_transactions` says which field to carry over.
+
 ## [0.1.3] — 2026-08-11
 
 The Windows release: `setup` could not reliably collect a client secret there,
@@ -106,7 +133,9 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.2.0
+[0.1.3]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.3
 [0.1.2]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.2
 [0.1.1]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.1
 [0.1.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.0
