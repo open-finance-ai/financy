@@ -9,7 +9,7 @@ import { defineConfig } from 'tsup'
 // `prebuild` script clears dist once, before either starts.
 export default defineConfig([
   {
-    entry: ['src/bin.ts', 'src/remote/start.ts'],
+    entry: ['src/bin.ts'],
     format: ['esm'],
     target: 'node20',
     clean: false,

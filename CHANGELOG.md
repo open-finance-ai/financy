@@ -6,6 +6,26 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-08-18
+
+The hosted MCP server moved out. This package is now the CLI and the local
+stdio MCP server — the parts worth installing — and nothing else.
+
+### Removed
+
+- **The remote MCP server** (`src/remote/`), its Lambda build and its Cloudflare
+  Worker now live in a separate private repository. They were server-side
+  infrastructure for the hosted connector at `mcp[-stg].open-finance.ai`, not
+  something anyone installing this package could use, and `dist/remote/start.js`
+  was being published to npm as a result. It is no longer shipped.
+  - `financy mcp` — the local stdio server — is **unaffected**. That is the MCP
+    server this package exists to provide, and it is unchanged.
+  - The hosted server consumes `TOOLS`, `callTool`, `bearerConfig` and `VERSION`
+    from this package's library entry point (added in 0.2.0), so both surfaces
+    still serve exactly the same tools and cannot drift apart.
+- `jose` is no longer a dependency — only the removed server used it. The
+  install is smaller by that whole subtree.
+
 ## [0.2.0] — 2026-08-18
 
 Transaction lookups were keyed by the wrong field, and the package became
@@ -133,7 +153,8 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.3.0
 [0.2.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.2.0
 [0.1.3]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.3
 [0.1.2]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.2
