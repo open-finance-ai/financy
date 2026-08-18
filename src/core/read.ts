@@ -146,12 +146,29 @@ export function fetchTransactions<T>(config: Config, now: Date, args: Transactio
   )
 }
 
-export function fetchTransaction<T>(config: Config, now: Date, id: string) {
+/**
+ * A bare transaction ULID (Crockford base32, 26 chars) — i.e. the `id` field.
+ * Unlike accounts and connections, whose `id` IS their key, a transaction is
+ * keyed by the composite sort key the API returns alongside it as `SK`. Passing
+ * the `id` would 404 as "not in your scope", which reads as a permissions
+ * problem rather than the wrong field, so we catch it and name the right one.
+ */
+const BARE_TRANSACTION_ID = /^[0-9A-HJKMNP-TV-Z]{26}$/i
+
+export function fetchTransaction<T>(config: Config, now: Date, key: string) {
+  if (BARE_TRANSACTION_ID.test(key)) {
+    throw new CliError(
+      EXIT.USAGE,
+      'INVALID_ARGUMENT',
+      `'${key}' is a transaction's \`id\`, but this lookup is keyed by its \`SK\` — ` +
+        `use the \`SK\` field from the same transaction (it looks like "TRANSACTION#TYPE#…#${key}")`,
+    )
+  }
   return getOne<T>(
     config,
     now,
-    `/data/transactions/${encodeURIComponent(id)}`,
-    notFound('TRANSACTION_NOT_FOUND', `no transaction ${id} in your scope`),
+    `/data/transactions/${encodeURIComponent(key)}`,
+    notFound('TRANSACTION_NOT_FOUND', `no transaction ${key} in your scope`),
   )
 }
 

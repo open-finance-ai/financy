@@ -128,6 +128,41 @@ describe('financy transactions list', () => {
   })
 })
 
+describe('financy transactions get is keyed by SK', () => {
+  // A transaction's `id` is a bare ULID, but the route is keyed by the composite
+  // sort key the API returns as `SK`. The list must therefore print the SK, the
+  // way the accounts/connections tables print the id their `get` accepts.
+  const ID = '01M07TQV1M36PXZSVHAHGH30W2'
+  const SK = `TRANSACTION#TYPE#CHECKING#PROVIDER#leumi#RESOURCE6dabb2ea-2b7b-4b39-bf16-6dc6ebe3f2ff#${ID}`
+
+  it('list prints the SK, so the printed identifier round-trips into get', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+    pool
+      .intercept({ path: (p) => p.startsWith(TXN_PATH), method: 'GET' })
+      .reply(200, {
+        items: [{ id: ID, SK, type: 'CHECKING', date: { transactionDate: '2026-08-14' } }],
+        nextPage: null,
+        count: 1,
+      })
+
+    const { code, stdout } = await runCli(['transactions', 'list'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(stdout).toContain(SK)
+  })
+
+  it('rejects a bare id with an actionable error naming SK', async () => {
+    const { code, stderr } = await runCli(['transactions', 'get', ID, '--json'], { env: ENV })
+
+    expect(code).toBe(2)
+    const { error } = JSON.parse(stderr)
+    expect(error.code).toBe('INVALID_ARGUMENT')
+    expect(error.message).toMatch(/\bSK\b/)
+  })
+})
+
 describe('financy transactions get', () => {
   it('exits 6 when the API returns an empty object (not-found convention)', async () => {
     const { pool, close } = mockApi()

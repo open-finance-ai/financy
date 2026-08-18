@@ -67,6 +67,8 @@ interface Account {
 
 interface Transaction {
   id: string
+  /** The composite sort key — what `transactions get` is keyed by, unlike `id`. */
+  SK?: string
   type?: string
   merchantName?: string
   description?: { description?: string; fixedText?: string }
@@ -132,7 +134,10 @@ const TRANSACTION_COLUMNS: Column<Transaction>[] = [
   { header: 'DESCRIPTION', value: (t) => dash(t.merchantName ?? t.description?.description) },
   { header: 'CATEGORY', value: (t) => `${dash(t.category?.main)}/${dash(t.category?.sub)}` },
   { header: 'TYPE', value: (t) => dash(t.type) },
-  { header: 'ID', value: (t) => t.id },
+  // The SK, not the id: this column exists to be pasted into `transactions get`,
+  // and that route is keyed by SK. Matches accounts/connections, whose ID column
+  // likewise prints the value their `get` accepts.
+  { header: 'SK', value: (t) => t.SK ?? t.id },
 ]
 
 const PROVIDER_COLUMNS: Column<Provider>[] = [
@@ -233,11 +238,12 @@ export function registerReadCommands(
       setExit(renderList(ctx, envelope, TRANSACTION_COLUMNS))
     })
   transactions
-    .command('get <id>')
+    .command('get <sk>')
+    .description('Read one transaction by its SK (the SK column of `transactions list`)')
     .option('--json', 'machine-readable output')
-    .action(async (id: string) => {
+    .action(async (sk: string) => {
       const config = await loadOrThrow(base.env)
-      setExit(renderGet(ctx, await fetchTransaction<Transaction>(config, base.now, id)))
+      setExit(renderGet(ctx, await fetchTransaction<Transaction>(config, base.now, sk)))
     })
 
   // --- categories (static taxonomy; emitted as-is) ---
