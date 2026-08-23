@@ -31,7 +31,7 @@ export const planNotEligible = () =>
   new CliError(
     EXIT.PLAN,
     'NOT_AVAILABLE_ON_PLAN',
-    'the API is available on Starter and Pro plans — upgrade in Financy → Settings → Plan',
+    'the API is available on every paid plan, including Starter, Pro, and Ultra — upgrade in Financy → Settings → Plan',
   )
 
 /** A 403 that is NOT the plan gate — a missing scope or otherwise forbidden route. */

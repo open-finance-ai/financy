@@ -26,7 +26,7 @@ export interface SetupContext {
 const CREDENTIALS_GUIDE =
   'financy needs your Financy API credentials: clientId, clientSecret, and userId.\n' +
   'Find them in the Financy app → Settings → API.\n' +
-  'This requires a registered Financy account on a paid plan (Starter or Pro) —\n' +
+  'This requires a registered Financy account on a paid plan (Starter, Pro, or Ultra) —\n' +
   'the data API is not available on the free plan. Sign up at https://open-finance.ai\n\n'
 
 /** `financy setup` — collect credentials, validate them, and persist to the config file. */

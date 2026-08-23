@@ -45,7 +45,7 @@ These are not optional and they apply to every step below.
 The financy data API is a paid feature. To finish this skill the user must have:
 
 1. A registered Financy account at <https://open-finance.ai>.
-2. A **paid plan** — Starter or Pro. The data API is not available on the free
+2. A **paid plan** — Starter, Pro, or Ultra. The data API is not available on the free
    plan.
 3. Three values from the Financy app → **Settings → API**: `clientId`,
    `clientSecret`, and `userId`.
@@ -150,8 +150,8 @@ credentials are correct, but the plan does not include the data API.
 
 Tell the user, in plain terms:
 
-> Your credentials are valid, but the data API needs a paid plan (Starter or
-> Pro). You can upgrade at <https://open-finance.ai> — the credentials are
+> Your credentials are valid, but the data API needs a paid plan (Starter, Pro,
+> or Ultra). You can upgrade at <https://open-finance.ai> — the credentials are
 > already saved, so `financy status` will work as soon as the plan is active.
 
 Then stop. Do not retry the command, do not ask for different credentials, and
