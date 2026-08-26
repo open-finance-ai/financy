@@ -36,7 +36,7 @@ The CLI talks to your Open-Finance data through the Financy API, which is a **pa
 feature**. To use it you must:
 
 1. **Register for a Financy account** at [open-finance.ai](https://open-finance.ai).
-2. **Subscribe to a paid plan** (Starter or Pro) — the data API is **not** available
+2. **Subscribe to any paid plan** (Starter, Pro, or Ultra) — the data API is **not** available
    on the free plan (every data command returns exit code `4`).
 3. Copy your `clientId`, `clientSecret`, and `userId` from the Financy app →
    **Settings → API**.

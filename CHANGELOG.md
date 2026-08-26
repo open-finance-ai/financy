@@ -6,6 +6,10 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Document the data API as available on every paid Financy plan, including Ultra, in the README, setup skill and CLI eligibility messages.
+
 ## [0.3.0] — 2026-08-18
 
 The hosted MCP server moved out. This package is now the CLI and the local
