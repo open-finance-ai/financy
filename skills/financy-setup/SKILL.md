@@ -157,6 +157,16 @@ Tell the user, in plain terms:
 Then stop. Do not retry the command, do not ask for different credentials, and
 do not look for a workaround.
 
+Exit `4` with code `ACCOUNT_LIMIT_REACHED` is different: the plan is fine, but
+the account holds more corporate accounts than the plan allows, so data reads
+are paused. Tell the user, in plain terms:
+
+> Your plan is active, but you have more corporate accounts connected than it
+> includes. In the Financy app, remove a corporate account or add an account
+> slot under Settings → Plan, and the data will be available right away.
+
+Do not suggest upgrading the plan as the first step.
+
 ## Non-interactive and CI environments
 
 If `FINANCY_CLIENT_ID`, `FINANCY_CLIENT_SECRET` and `FINANCY_USER_ID` are

@@ -4,6 +4,7 @@ import { httpFetch } from './http.js'
 import {
   authFailed,
   planNotEligible,
+  accountLimitReached,
   forbidden,
   apiUnavailable,
   insufficientCredits,
@@ -44,17 +45,41 @@ function authHeaders(token: string): Record<string, string> {
   return { authorization: `Bearer ${token}`, 'user-agent': USER_AGENT }
 }
 
+interface ApiErrorBody {
+  type?: string
+  message?: string
+}
+
+/** The API's `{type, message}` error envelope, or `{}` when the body is not JSON. */
+function parseErrorBody(detail: string): ApiErrorBody {
+  try {
+    const parsed = JSON.parse(detail) as unknown
+    return parsed && typeof parsed === 'object' ? (parsed as ApiErrorBody) : {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Map a 403 to the CLI's error contract by the API's machine-readable `type`,
+ * never by free text: the account-cap message happens to contain the word
+ * "plan", and matching on it told paid users to upgrade.
+ */
+function forbiddenError(detail: string): Error {
+  if (!detail) return planNotEligible()
+  const body = parseErrorBody(detail)
+  const code = body.type ?? body.message
+  if (code === 'ACCOUNT_LIMIT_REACHED') return accountLimitReached(body.message)
+  if (code === 'NOT_AVAILABLE_ON_PLAN') return planNotEligible()
+  return forbidden(detail)
+}
+
 /** Map a non-OK HTTP status to the CLI's error contract, including the server's detail. */
 async function ensureOk(res: Response): Promise<void> {
   if (res.ok) return
   if (res.status === 401) throw authFailed()
   const detail = (await res.text().catch(() => '')).slice(0, 300)
-  if (res.status === 403) {
-    // The plan gate returns NOT_AVAILABLE_ON_PLAN; any other 403 is a scope /
-    // permission denial we surface distinctly rather than nagging about upgrades.
-    if (!detail || /NOT_AVAILABLE_ON_PLAN|plan/i.test(detail)) throw planNotEligible()
-    throw forbidden(detail)
-  }
+  if (res.status === 403) throw forbiddenError(detail)
   throw apiUnavailable(
     `the API returned HTTP ${res.status}${detail ? `: ${detail}` : ''}`,
   )

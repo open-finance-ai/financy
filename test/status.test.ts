@@ -123,6 +123,53 @@ describe('financy status --json', () => {
     expect(payload.error.code).toBe('NOT_AVAILABLE_ON_PLAN')
   })
 
+  it('exits 4 with ACCOUNT_LIMIT_REACHED, not NOT_AVAILABLE_ON_PLAN, when the API 403s an over-cap org', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+
+    pool
+      .intercept({ path: '/oauth/token', method: 'POST' })
+      .reply(200, {
+        accessToken: makeJwt({ exp: Math.floor(Date.parse('2099-01-01') / 1000) }),
+        tokenType: 'Bearer',
+        expiresIn: 86400,
+      })
+    pool.intercept({ path: '/v2/connections', method: 'GET' }).reply(403, {
+      type: 'ACCOUNT_LIMIT_REACHED',
+      message: "You've reached your plan's corporate-account limit. Upgrade, add a slot, or remove a corporate account to continue.",
+    })
+
+    const { code, stdout, stderr } = await runCli(['status', '--json'], { env: ENV })
+
+    expect(code).toBe(4)
+    expect(stdout).toBe('')
+    const payload = JSON.parse(stderr)
+    expect(payload.error.code).toBe('ACCOUNT_LIMIT_REACHED')
+    expect(payload.error.message).toMatch(/corporate-account limit/)
+  })
+
+  it('exits 4 with FORBIDDEN when a 403 body is neither the plan gate nor the account cap', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+
+    pool
+      .intercept({ path: '/oauth/token', method: 'POST' })
+      .reply(200, {
+        accessToken: makeJwt({ exp: Math.floor(Date.parse('2099-01-01') / 1000) }),
+        tokenType: 'Bearer',
+        expiresIn: 86400,
+      })
+    pool.intercept({ path: '/v2/connections', method: 'GET' }).reply(403, {
+      type: 'MCP_FORBIDDEN',
+      message: 'This connector token is missing the mcp:read scope. Reconnect the Financy connector to grant it.',
+    })
+
+    const { code, stderr } = await runCli(['status', '--json'], { env: ENV })
+
+    expect(code).toBe(4)
+    expect(JSON.parse(stderr).error.code).toBe('FORBIDDEN')
+  })
+
   it('exits 7 (api-unavailable) with a JSON error when the network fails', async () => {
     const { pool, close } = mockApi()
     teardown = close

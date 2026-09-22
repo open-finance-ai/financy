@@ -145,6 +145,22 @@ describe('mcp refresh_connections tool', () => {
   })
 })
 
+describe('mcp tools surface the account cap as ACCOUNT_LIMIT_REACHED', () => {
+  it('does not mislabel a 403 ACCOUNT_LIMIT_REACHED as NOT_AVAILABLE_ON_PLAN', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+    pool.intercept({ path: '/v2/data/accounts', method: 'GET' }).reply(403, {
+      type: 'ACCOUNT_LIMIT_REACHED',
+      message: "You've reached your plan's corporate-account limit. Upgrade, add a slot, or remove a corporate account to continue.",
+    })
+
+    const result = await callTool('list_accounts', {}, { env: env() })
+
+    expect(result).toMatchObject({ error: { code: 'ACCOUNT_LIMIT_REACHED' } })
+  })
+})
+
 describe('mcp get_* tools', () => {
   it('returns NOT_FOUND error envelope when the resource is absent', async () => {
     const { pool, close } = mockApi()

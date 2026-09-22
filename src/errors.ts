@@ -34,7 +34,11 @@ export const planNotEligible = () =>
     'the API is available on every paid plan, including Starter, Pro, and Ultra — upgrade in Financy → Settings → Plan',
   )
 
-/** A 403 that is NOT the plan gate — a missing scope or otherwise forbidden route. */
+export const accountLimitReached = (
+  message = "you've reached your plan's corporate-account limit — remove a corporate account or add an account slot in Financy → Settings → Plan",
+) => new CliError(EXIT.PLAN, 'ACCOUNT_LIMIT_REACHED', message)
+
+/** A 403 that is neither the plan gate nor the account cap — a missing scope or otherwise forbidden route. */
 export const forbidden = (detail: string) =>
   new CliError(EXIT.PLAN, 'FORBIDDEN', `the API denied this request (403): ${detail}`)
 
