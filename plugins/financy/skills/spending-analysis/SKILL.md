@@ -27,10 +27,12 @@ incomplete. Say so rather than reporting a low total.
 Call `list_transactions` with `from` and `to` (`YYYY-MM-DD`). Always pass a
 date range. Work one month at a time for anything longer than a month.
 
-- Follow `nextPage` with `cursor` until it is `null`, or pass `all: true` for a
-  single month.
-- If you get `RESULT_TOO_LARGE`, split the window (for example by half-month, or
-  by `type`) and try again. Don't drop the filters.
+- Results come 50 at a time. Follow `nextPage` by passing it as `cursor` until
+  it is `null`. A busy month is several pages, and a total built from the first
+  page alone is wrong.
+- Avoid `all: true`. A busy month can exceed the result size and come back as
+  `RESULT_TOO_LARGE`. If that happens, page with `cursor` instead, or split
+  the window by half-month or by `type`. Don't drop the filters.
 - `type: "CARD"` returns only card transactions, and `type: "BANK"` only
   bank-account transactions.
 
