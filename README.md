@@ -130,6 +130,25 @@ an unconfigured server returns a structured `NOT_CONFIGURED` error from every to
 `refresh_connections` costs 20 credits — its tool description tells agents to
 confirm with the user first.
 
+## Claude plugin
+
+[`plugins/financy/`](plugins/financy/) is a Claude plugin for the **hosted**
+connector. It needs no CLI and no API keys: it points Claude at
+`https://mcp.open-finance.ai/mcp`, where you sign in with your Financy account,
+and it adds skills written for that connector's tools. There is no
+`refresh_connections` in the hosted connector, so the plugin's
+`freshness-check` sends the user to the Financy app to refresh.
+
+Install it in Claude Code:
+
+```sh
+claude plugin marketplace add open-finance-ai/financy
+claude plugin install financy@open-finance
+```
+
+The skills under [`skills/`](skills/) are separate. They are the CLI's own
+skills, and they call `financy` commands.
+
 ## Updating
 
 ```sh

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "financy": {
+      "type": "http",
+      "url": "https://mcp.open-finance.ai/mcp"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "financy",
+  "displayName": "Financy",
+  "version": "0.1.0",
+  "description": "Ask Claude about your Israeli bank and credit-card accounts, balances and transactions. Connects to Financy's read-only connector and adds skills for checking data freshness, analysing spending without double-counting card bills, and summarising balances.",
+  "author": { "name": "Open Finance AI", "email": "hello@open-finance.ai", "url": "https://open-finance.ai" },
+  "homepage": "https://open-finance.ai",
+  "repository": "https://github.com/open-finance-ai/financy",
+  "license": "Apache-2.0",
+  "keywords": ["finance", "banking", "open-banking", "israel", "transactions", "budget"]
+}
