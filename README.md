@@ -95,6 +95,82 @@ Every command takes `--json` for a stable machine-readable envelope
 `--all` (auto-paginate). Exit codes: `0` ok · `1` unexpected · `2` usage · `3` auth
 · `4` plan · `5` credits · `6` not-found · `7` api.
 
+## Connect bit (digital wallet) and ask about it
+
+bit can now be connected to Financy as a **digital wallet** (ארנק דיגיטלי). The
+connection runs over regulated Open Banking and is **read-only**: Financy reads the
+wallet account, its balance, and its transactions. It cannot send or request
+payments, and there is no savings data.
+
+### 1. Connect bit — from your phone
+
+bit approves Open Banking consents **only inside its mobile app**, so start the
+connection on the phone that has bit installed:
+
+1. Open the Financy app at [financy.open-finance.ai](https://financy.open-finance.ai)
+   in your phone's browser.
+2. **Connect account** → the **ארנקים** (wallets) tab → **bit**.
+3. Approve the consent in the bit app when it opens, then return to Financy.
+
+Starting from a desktop browser will not work — the approval step has to land in
+the bit app.
+
+### 2. Ask about it from the CLI
+
+bit is a connection like any bank or card, with provider id `bit`. There are no
+wallet-specific commands; filter by its connection id:
+
+```sh
+financy connections list          # bit appears with PROVIDER "bit" — copy its ID
+financy status                    # is the bit data current?
+financy accounts list --connection <bit-connection-id>     # the wallet and its balance
+financy transactions list --connection <bit-connection-id> --from 2026-09-01 --all
+financy transactions list --connection <bit-connection-id> --from 2026-09-01 --all --json
+```
+
+Leave out `--connection` and you get every source at once — bit next to your banks
+(e.g. Bank Hapoalim, provider `hapoalim`) and cards (e.g. Isracard, provider
+`isracard`):
+
+```sh
+financy accounts list                                  # bit, bank, and card balances together
+financy transactions list --from 2026-09-01 --all      # this month, every source
+financy providers list                                 # resolve any PROVIDER value to its name
+```
+
+### 3. Ask about it from Claude or ChatGPT
+
+Through the MCP server the same data is available as tools: `list_connections`
+and `get_status` to find bit and check freshness, `list_accounts` and
+`list_transactions` (both take a `connection` argument, and `list_transactions`
+takes `from`/`to`) to read it, and `list_providers` to resolve provider ids.
+
+- **Claude Code**, with the local server: `claude mcp add financy -- npx financy mcp`
+  (see [MCP server](#mcp-server-for-ai-agents)).
+- **Claude or ChatGPT**, with no CLI: add the hosted Financy connector,
+  `https://mcp.open-finance.ai/mcp`, as a custom connector and sign in with your
+  Financy account.
+
+Then ask in plain language. The assistant pulls bit, bank, and card transactions
+and combines them. Questions like "who hasn't paid yet" work by comparing this
+period's incoming bit transfers with earlier ones — give the assistant the list of
+who you expect to pay if you have one.
+
+### Prompts for business owners
+
+| Prompt | In English |
+|---|---|
+| «מי עוד לא שילם לי החודש?» | Who hasn't paid me yet this month? |
+| «מי שילם לי פעמיים בטעות?» | Who paid me twice by mistake? |
+| «כמה עשיתי היום?» | How much did I take in today? |
+| «מי מהלקוחות הקבועים נעלם לי?» | Which regular customers have stopped paying? |
+| «כמה כסף שוכב לי בביט ולא עבר לבנק?» | How much is sitting in bit and hasn't moved to the bank? |
+| «איזה יום בשבוע הכי רווחי לי?» | Which day of the week brings in the most? |
+| «כמה נכנס החודש מכל החשבונות — ביט והבנק ביחד?» | How much came in this month across all accounts — bit and the bank together? |
+| «תן לי רשימה של כל מי ששילם לי בביט השבוע, עם סכום ותאריך» | List everyone who paid me on bit this week, with amount and date. |
+| «מה התשלום הממוצע בביט החודש לעומת החודש שעבר?» | What's the average bit payment this month versus last month? |
+| «תבנה לי דאשבורד שאני פותח כל בוקר: הכנסות מביט ומהבנק, הוצאות בישראכרט, ומי עוד לא שילם» | Build me a dashboard I open every morning: income from bit and the bank, Isracard spending, and who still hasn't paid. |
+
 ## Agent skills
 
 Skills ship inside this package, so they can never drift from the CLI version they
