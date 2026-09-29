@@ -13,6 +13,14 @@ All notable changes to `financy` are documented here. The format follows
 ### Changed
 
 - Document the data API as available on every paid Financy plan, including Ultra, in the README, setup skill and CLI eligibility messages.
+- **The MCP tools know about bit.** `list_connections` and `list_providers` now
+  describe digital wallets (bit) alongside banks and cards. `list_accounts` and
+  `list_transactions` tell agents that a bit wallet has no `type` filter value of
+  its own — filter by its connection instead. `list_transactions` also warns that
+  bit top-ups from a credit card and bit withdrawals to a bank are internal
+  transfers, so an agent summing across bit, bank and card must exclude them or
+  count the same money twice. The matching CLI help text (`connections`,
+  `providers`, and the `--type` options) says the same.
 
 ## [0.3.0] — 2026-08-18
 
