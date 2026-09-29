@@ -1,0 +1,12 @@
+{
+  "name": "open-finance",
+  "description": "Plugins from Open Finance AI",
+  "owner": { "name": "Open Finance AI", "email": "hello@open-finance.ai" },
+  "plugins": [
+    {
+      "name": "financy",
+      "source": "./plugins/financy",
+      "description": "Ask Claude about your Israeli bank and credit-card accounts, balances and transactions through Financy's read-only connector."
+    }
+  ]
+}
