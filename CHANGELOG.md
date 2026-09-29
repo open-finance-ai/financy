@@ -6,6 +6,10 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A README guide to connecting bit as a digital wallet and querying it with the CLI and MCP tools, alongside banks and cards, with ready-made prompts for business owners.
+
 ### Changed
 
 - Document the data API as available on every paid Financy plan, including Ultra, in the README, setup skill and CLI eligibility messages.
