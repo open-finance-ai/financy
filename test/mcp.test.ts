@@ -78,6 +78,20 @@ describe('mcp tool registry', () => {
     expect(refresh.description).toMatch(/confirm/i)
   })
 
+  it('makes the listing tools bit-aware: wallets, filter by connection, no double counting', () => {
+    const desc = (name: string) => TOOLS.find((t) => t.name === name)!.description
+    expect(desc('list_connections')).toMatch(/digital wallets/i)
+    expect(desc('list_connections')).toMatch(/\bbit\b/)
+    expect(desc('list_providers')).toMatch(/digital wallets \(e\.g\. bit\)/i)
+    for (const name of ['list_accounts', 'list_transactions']) {
+      expect(desc(name)).toMatch(/\bbit\b/)
+      expect(desc(name)).toMatch(/connection/)
+    }
+    expect(desc('list_transactions')).toMatch(/FROM_CREDIT_CARD/)
+    expect(desc('list_transactions')).toMatch(/Withdrawal to Bank Account/)
+    expect(desc('list_transactions')).toMatch(/twice/)
+  })
+
   it('gives every tool a non-empty agent-facing description and an object input schema', () => {
     for (const tool of TOOLS) {
       expect(tool.description.length).toBeGreaterThan(20)

@@ -157,7 +157,7 @@ export async function postRefresh(
   return (await res.json()) as RefreshResult
 }
 
-/** GET /v2/connections — the user's bank/card connections and their fetch state. */
+/** GET /v2/connections — the user's bank, card and wallet connections and their fetch state. */
 export async function getConnections(
   config: Config,
   token: string,
