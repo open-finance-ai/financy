@@ -16,7 +16,12 @@ export function renderList<T>(
   if (ctx.json) {
     ctx.out(
       JSON.stringify(
-        { data: envelope.data, count: envelope.count, nextPage: envelope.nextPage },
+        {
+          data: envelope.data,
+          count: envelope.count,
+          nextPage: envelope.nextPage,
+          ...(envelope.freshness === undefined ? {} : { freshness: envelope.freshness }),
+        },
         null,
         2,
       ),
@@ -30,7 +35,16 @@ export function renderList<T>(
 /** Render a pre-fetched single-resource envelope. */
 export function renderGet<T>(ctx: RenderContext, envelope: GetEnvelope<T>): number {
   if (ctx.json) {
-    ctx.out(JSON.stringify({ data: envelope.data }, null, 2))
+    ctx.out(
+      JSON.stringify(
+        {
+          data: envelope.data,
+          ...(envelope.freshness === undefined ? {} : { freshness: envelope.freshness }),
+        },
+        null,
+        2,
+      ),
+    )
   } else {
     ctx.out(JSON.stringify(envelope.data, null, 2) + '\n')
   }

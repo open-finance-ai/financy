@@ -23,7 +23,7 @@ export interface ReadBase {
   out: (chunk: string) => void
 }
 
-async function loadOrThrow(env: NodeJS.ProcessEnv): Promise<Config> {
+export async function loadOrThrow(env: NodeJS.ProcessEnv): Promise<Config> {
   const result = await loadConfig(env)
   if (!result.ok) throw notConfigured(result)
   return result.config
@@ -39,7 +39,7 @@ const ils = (n: unknown) => {
 }
 
 /** Display a scalar; objects/arrays and nullish become an em dash (never `[object Object]`). */
-const dash = (v: unknown) =>
+export const dash = (v: unknown) =>
   v == null || typeof v === 'object' ? '—' : String(v)
 
 // --- Row shapes (subset of the live mapper outputs, reconciled 2026-07-24). All

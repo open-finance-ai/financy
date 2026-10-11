@@ -4,13 +4,14 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
-import { TOOLS, callTool } from './tools.js'
+import { LOCAL_TOOLS, callLocalTool } from './integration-tools.js'
 import { VERSION } from '../version.js'
 
 /**
  * Start the stdio MCP server. Thin transport glue over the tested tool registry
- * (`tools.ts`): it lists TOOLS and routes tools/call through `callTool`, which
- * resolves config, runs the shared CLI data-core, and returns the same
+ * (`tools.ts` + `integration-tools.ts`): it lists LOCAL_TOOLS and routes
+ * tools/call through `callLocalTool`, which resolves config, runs the shared
+ * CLI data-core, and returns the same
  * `{data,...}` / `{error,...}` envelopes as `financy --json`.
  */
 export async function startMcpServer(env: NodeJS.ProcessEnv): Promise<void> {
@@ -20,7 +21,7 @@ export async function startMcpServer(env: NodeJS.ProcessEnv): Promise<void> {
   )
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: TOOLS.map((t) => ({
+    tools: LOCAL_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
@@ -28,7 +29,7 @@ export async function startMcpServer(env: NodeJS.ProcessEnv): Promise<void> {
   }))
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const result = await callTool(request.params.name, request.params.arguments ?? {}, { env })
+    const result = await callLocalTool(request.params.name, request.params.arguments ?? {}, { env })
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }
   })
 

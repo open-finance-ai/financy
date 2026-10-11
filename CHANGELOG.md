@@ -8,6 +8,41 @@ All notable changes to `financy` are documented here. The format follows
 
 ### Added
 
+- **Invoices from your business system (Invoice4U).** New commands read the
+  integrations API (`https://api.open-finance.ai/integrations`, overridable with
+  `FINANCY_INTEGRATIONS_URL`) with the same credentials as everything else:
+  `integrations list|get`, `receivables` (open and overdue totals, aged per
+  customer), `documents list|get`, `customers list|get`, and `proposals list|get`.
+  Tables show shekels; `--json` keeps the API's integer minor units and adds a
+  `freshness` object to record lists. Requires a Starter plan or above
+  (`UPGRADE_REQUIRED`, exit `4`).
+- **`financy proposals create <integrationId> --file draft.json`** creates a document
+  *draft* and prints its approval link. Nothing is issued until the user approves it
+  in Financy; the CLI cannot approve or cancel. Every request carries an
+  `Idempotency-Key` (a new UUID, or `--idempotency-key`) so a retry returns the
+  first draft.
+- **Invoicing tools on the local MCP server** (`financy mcp`): `list_integrations`,
+  `get_integration`, `get_receivables`, `list_invoicing_documents`,
+  `get_invoicing_document`, `list_invoicing_customers`, `get_invoicing_customer`,
+  `list_proposals`, `get_proposal`, and the draft tools `draft_invoice`,
+  `draft_invoice_receipt`, `draft_receipt` and `draft_credit_note`, whose
+  descriptions say a draft is issued only after the user approves it in Financy.
+  They are deliberately **not** added to the importable `TOOLS` table or routed by
+  `callTool`: hosts that import those serve their own invoicing tools under the
+  same names, and would otherwise register each name twice. The library surface is
+  unchanged.
+- Integration API errors keep the API's own code (`UPGRADE_REQUIRED`, `NOT_FOUND`,
+  `PROPOSAL_INVALID`, `RATE_LIMITED`, …) and map onto the existing exit codes by
+  class (`4` plan/permission, `6` not found, `2` invalid request, `1` conflict,
+  `7` rate-limited/unavailable), with `retryable`, `userActionRequired` and the
+  API's `action` in the `--json` error.
+- A cached token minted before the API key was given integration access is refused
+  with `INSUFFICIENT_SCOPE`; the CLI then discards it, mints a fresh token and
+  retries once. If the fresh token is refused too, the error (exit `4`) says the key
+  has no integration access yet: Starter or above, and rotate the key in Financy →
+  Settings → API if needed.
+- `financy config` shows the integrations URL.
+
 - A README guide to connecting bit as a digital wallet and querying it with the CLI and MCP tools, alongside banks and cards, with ready-made prompts for business owners.
 
 ### Changed

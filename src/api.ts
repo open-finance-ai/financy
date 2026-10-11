@@ -61,7 +61,7 @@ async function ensureOk(res: Response): Promise<void> {
 }
 
 /** When FINANCY_DEBUG is set, print the raw response body to stderr for shape reconciliation. */
-function debugBody(path: string, body: unknown): void {
+export function debugBody(path: string, body: unknown): void {
   if (process.env.FINANCY_DEBUG) {
     process.stderr.write(`[financy:debug] ${path} →\n${JSON.stringify(body, null, 2)}\n`)
   }

@@ -80,6 +80,11 @@ financy transactions list|get <id>   Transactions with --from/--to/--account/--t
 financy categories                   The category taxonomy (English + Hebrew)
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
+financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U)
+financy receivables                  Who owes you what: open and overdue invoices, aged per customer
+financy documents list|get           Invoices, receipts and credit notes in a business system
+financy customers list|get           Customers in a business system
+financy proposals list|get|create    Document drafts — issued only after you approve them in Financy
 financy config                       Show resolved endpoints + credential sources (secret masked)
 financy skills list|install          Agent skills bundled with the CLI
 financy mcp                          Run the embedded MCP server (stdio)
@@ -171,6 +176,79 @@ who you expect to pay if you have one.
 | «מה התשלום הממוצע בביט החודש לעומת החודש שעבר?» | What's the average bit payment this month versus last month? |
 | «תבנה לי דאשבורד שאני פותח כל בוקר: הכנסות מביט ומהבנק, הוצאות בישראכרט, ומי עוד לא שילם» | Build me a dashboard I open every morning: income from bit and the bank, Isracard spending, and who still hasn't paid. |
 
+## Invoices (Invoice4U)
+
+Connect your invoicing system to Financy and the CLI reads it next to your bank
+data: who owes you what, every invoice and receipt, your customers — and it can
+**draft** documents for you to approve. Invoice4U is supported today; it needs a
+paid plan (Starter and above), and a free account gets exit `4` with the code
+`UPGRADE_REQUIRED`.
+
+Connect Invoice4U in the Financy app, on the **Connections** page; the CLI reads
+connections, it does not create them. Then:
+
+```sh
+financy integrations list                     # copy the integration ID (intg_…)
+financy receivables                           # open and overdue totals, per customer
+financy receivables --detailed --json         # …with each customer's open invoices
+financy documents list <integrationId> --status open --from 2026-09-01
+financy documents list <integrationId> --receivable-only --all --json
+financy documents get <integrationId> <documentId>
+financy customers list <integrationId> --search "סטודיו"
+```
+
+```
+$ financy receivables
+Receivables as of 2026-10-11
+  ILS: ₪2,340.00 open, ₪2,340.00 overdue across 1 documents
+
+CUSTOMER   OPEN       OVERDUE    DOCS  MAX DAYS LATE  CUSTOMER ID
+סטודיו גל  ₪2,340.00  ₪2,340.00  1     10             icus_…
+```
+
+Tables show amounts in shekels; under `--json` every amount is an integer in minor
+units (`…Minor`, agorot for ILS) exactly as the API returns it, and record lists
+carry a `freshness` object saying how recent the synced data is. Record lists page
+with `--limit`, `--cursor` and `--all`; `proposals list` takes only `--limit` (max 50).
+
+### Drafting a document
+
+`financy proposals create` sends a draft request and creates a **draft** — nothing
+is issued. The document is created in Invoice4U only after you open the returned
+approval link and approve it in Financy:
+
+```sh
+cat > draft.json <<'JSON'
+{
+  "action": "create_tax_invoice",
+  "items": [{
+    "counterpartyId": "icus_…",
+    "lines": [{ "description": "עיצוב לוגו", "quantity": 1, "unitPriceMinor": 234000 }],
+    "pricesIncludeVat": true
+  }]
+}
+JSON
+financy proposals create <integrationId> --file draft.json
+financy proposals get <proposalId>            # status: pending_approval → completed
+```
+
+`action` is one of `create_tax_invoice`, `create_invoice_receipt`, `create_receipt`,
+`create_credit_note` or `create_customer`. Each request carries an `Idempotency-Key`
+(a fresh UUID unless you pass `--idempotency-key`), so retrying with the same key
+returns the first draft instead of a second one. The CLI cannot approve or cancel a
+draft — that is always your step in Financy.
+
+Integration errors keep the API's code (`UPGRADE_REQUIRED`, `NOT_FOUND`,
+`VALIDATION_FAILED`, `PROPOSAL_INVALID`, `RATE_LIMITED`, …) and exit by class: `4`
+plan or permission, `6` not found, `2` invalid request, `1` conflict or expired
+cursor, `7` rate-limited or unavailable. Under `--json` the error also carries
+`retryable`, `userActionRequired` and, where the API gives one, an `action`.
+`INSUFFICIENT_SCOPE` means the token predates the key's integration access: the CLI
+mints a fresh one and retries once, and if that is refused too, the key has no
+integration access yet (Starter or above; rotate the key in Financy → Settings → API).
+The integrations API lives at `https://api.open-finance.ai/integrations`; override it
+with `FINANCY_INTEGRATIONS_URL` (it otherwise follows `FINANCY_API_URL`'s host).
+
 ## Agent skills
 
 Skills ship inside this package, so they can never drift from the CLI version they
@@ -205,6 +283,16 @@ Credentials resolve exactly as the CLI does (config file or `FINANCY_*` env vars
 an unconfigured server returns a structured `NOT_CONFIGURED` error from every tool.
 `refresh_connections` costs 20 credits — its tool description tells agents to
 confirm with the user first.
+
+The local server also serves the invoicing tools — `list_integrations`,
+`get_integration`, `get_receivables`, `list_invoicing_documents`,
+`get_invoicing_document`, `list_invoicing_customers`, `get_invoicing_customer`,
+`list_proposals`, `get_proposal`, and the draft tools `draft_invoice`,
+`draft_invoice_receipt`, `draft_receipt` and `draft_credit_note`. A draft tool only
+creates a draft: its description tells the agent to show the user the approval link,
+and nothing is issued until the user approves it in Financy. These tools are not in
+the importable `TOOLS` table, because hosts that import it (such as the hosted
+Financy connector) serve their own invoicing tools under the same names.
 
 ## Updating
 

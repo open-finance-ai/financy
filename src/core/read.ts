@@ -9,11 +9,14 @@ export interface ListEnvelope<T> {
   data: T[]
   count: number
   nextPage: string | null
+  /** How old the data behind the answer is, where the API reports it. */
+  freshness?: unknown
 }
 
 /** The single-resource envelope. */
 export interface GetEnvelope<T> {
   data: T
+  freshness?: unknown
 }
 
 export interface ListArgs {
