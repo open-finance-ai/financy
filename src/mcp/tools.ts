@@ -211,8 +211,18 @@ export async function callTool(
   args: Record<string, unknown>,
   io: CallToolIO,
 ): Promise<unknown> {
+  return dispatchTool(BY_NAME, name, args, io)
+}
+
+/** `callTool` over any tool table (the local stdio server adds tools the published table does not carry). */
+export async function dispatchTool(
+  byName: ReadonlyMap<string, ToolDef>,
+  name: string,
+  args: Record<string, unknown>,
+  io: CallToolIO,
+): Promise<unknown> {
   try {
-    const tool = BY_NAME.get(name)
+    const tool = byName.get(name)
     if (!tool) {
       throw new CliError(EXIT.USAGE, 'UNKNOWN_TOOL', `no tool named '${name}'`)
     }

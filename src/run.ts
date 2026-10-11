@@ -5,6 +5,7 @@ import { setupCommand } from './commands/setup.js'
 import { configCommand } from './commands/config.js'
 import { refreshCommand } from './commands/refresh.js'
 import { registerReadCommands } from './commands/read-commands.js'
+import { registerIntegrationCommands } from './commands/integration-commands.js'
 import {
   resolveSkillsRoot,
   skillsInstallCommand,
@@ -173,6 +174,9 @@ export async function run(argv: string[], io: RunIO = {}): Promise<number> {
     })
 
   registerReadCommands(program, { env, now, json, out }, (code) => {
+    exitCode = code
+  })
+  registerIntegrationCommands(program, { env, now, json, out }, (code) => {
     exitCode = code
   })
 

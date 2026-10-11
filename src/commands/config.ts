@@ -51,6 +51,7 @@ export async function configCommand(ctx: ConfigContext): Promise<number> {
           authTokenUrl: endpoints.authTokenUrl,
           apiBaseUrl: endpoints.apiBaseUrl,
           chatBaseUrl: endpoints.chatBaseUrl,
+          integrationsBaseUrl: endpoints.integrationsBaseUrl,
           clientId: clientId.value ? maskId(clientId.value) : null,
           clientIdSource: clientId.source,
           clientSecretSet: clientSecret.source !== 'unset',
@@ -76,6 +77,7 @@ export async function configCommand(ctx: ConfigContext): Promise<number> {
     `  auth url       ${endpoints.authTokenUrl}`,
     `  api url        ${endpoints.apiBaseUrl}`,
     `  chat url       ${endpoints.chatBaseUrl}`,
+    `  integrations   ${endpoints.integrationsBaseUrl}`,
     '',
     `  clientId       ${maskId(clientId.value)}  (${clientId.source})`,
     `  clientSecret   ${

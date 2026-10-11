@@ -77,16 +77,19 @@ export async function getAccessToken(config: Config, now: Date): Promise<string>
   return mintAndCache(config)
 }
 
+const isAuthFailure = (error: CliError) => error.code === 'AUTH_FAILED'
+
 /**
  * Run an authorized request with a valid token (cached or freshly minted). If
- * the request fails auth (a 401, surfaced as an AUTH_FAILED CliError), the token
- * is re-minted once, bypassing the cache, and the request retried — covering a
- * revoked or server-side-expired token.
+ * the request fails auth (a 401, surfaced as an AUTH_FAILED CliError, or any
+ * error `remintOn` accepts), the token is re-minted once, bypassing the cache,
+ * and the request retried — covering a revoked or server-side-expired token.
  */
 export async function authorized<T>(
   config: Config,
   now: Date,
   request: (token: string) => Promise<T>,
+  remintOn: (error: CliError) => boolean = isAuthFailure,
 ): Promise<T> {
   if (config.bearerToken) return request(config.bearerToken)
 
@@ -94,7 +97,7 @@ export async function authorized<T>(
   try {
     return await request(token)
   } catch (error) {
-    if (error instanceof CliError && error.code === 'AUTH_FAILED') {
+    if (error instanceof CliError && remintOn(error)) {
       return await request(await mintAndCache(config))
     }
     throw error

@@ -42,6 +42,24 @@ describe('financy config', () => {
     expect(cfg.userId).toBeNull()
   })
 
+  it('reports the integrations base URL, following FINANCY_API_URL unless overridden', async () => {
+    const defaults = JSON.parse((await runCli(['config', '--json'], { env: {} })).stdout)
+    const followed = JSON.parse(
+      (await runCli(['config', '--json'], { env: { FINANCY_API_URL: 'https://staging.example.com/v2' } })).stdout,
+    )
+    const pinned = JSON.parse(
+      (
+        await runCli(['config', '--json'], {
+          env: { FINANCY_API_URL: 'https://staging.example.com/v2', FINANCY_INTEGRATIONS_URL: 'https://other.example.com/i' },
+        })
+      ).stdout,
+    )
+
+    expect(defaults.integrationsBaseUrl).toBe('https://api.open-finance.ai/integrations')
+    expect(followed.integrationsBaseUrl).toBe('https://staging.example.com/integrations')
+    expect(pinned.integrationsBaseUrl).toBe('https://other.example.com/i')
+  })
+
   it('masks the secret in the human view too', async () => {
     writeFileSync(
       join(testConfigDir(), 'config.json'),

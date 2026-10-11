@@ -15,6 +15,7 @@ export interface Endpoints {
   authTokenUrl: string
   apiBaseUrl: string
   chatBaseUrl: string
+  integrationsBaseUrl: string
   configDir: string
 }
 
@@ -29,6 +30,22 @@ const DEFAULT_API_BASE_URL = 'https://api.open-finance.ai/v2'
 // The initiated-refresh route lives outside the /v2 base path, under the
 // doubled /chat/chat prefix (gateway stage + service base path).
 const DEFAULT_CHAT_BASE_URL = 'https://api.open-finance.ai/chat/chat'
+const DEFAULT_INTEGRATIONS_BASE_URL = 'https://api.open-finance.ai/integrations'
+
+/**
+ * The business-system integrations API lives under /integrations on the API's
+ * own domain, so pointing FINANCY_API_URL at another environment moves it too,
+ * unless FINANCY_INTEGRATIONS_URL names it explicitly.
+ */
+function resolveIntegrationsBaseUrl(env: NodeJS.ProcessEnv): string {
+  if (env.FINANCY_INTEGRATIONS_URL) return env.FINANCY_INTEGRATIONS_URL
+  if (!env.FINANCY_API_URL) return DEFAULT_INTEGRATIONS_BASE_URL
+  try {
+    return `${new URL(env.FINANCY_API_URL).origin}/integrations`
+  } catch {
+    return DEFAULT_INTEGRATIONS_BASE_URL
+  }
+}
 
 function resolveConfigDir(env: NodeJS.ProcessEnv): string {
   if (env.FINANCY_CONFIG_DIR) return env.FINANCY_CONFIG_DIR
@@ -42,6 +59,7 @@ export function resolveEndpoints(env: NodeJS.ProcessEnv): Endpoints {
     authTokenUrl: env.FINANCY_AUTH_URL ?? DEFAULT_AUTH_TOKEN_URL,
     apiBaseUrl: env.FINANCY_API_URL ?? DEFAULT_API_BASE_URL,
     chatBaseUrl: env.FINANCY_CHAT_URL ?? DEFAULT_CHAT_BASE_URL,
+    integrationsBaseUrl: resolveIntegrationsBaseUrl(env),
     configDir: resolveConfigDir(env),
   }
 }
