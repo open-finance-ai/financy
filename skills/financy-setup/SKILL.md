@@ -145,6 +145,8 @@ cost.
 
 ## Business systems (invoicing)
 
+The invoicing commands need CLI **0.4.0** or later (`financy --version`; `financy update` if older).
+
 Besides bank and card data, the same credentials read a connected invoicing
 system — Invoice4U today. If the user mentions invoices, receipts, customers or
 "who owes me", check what is connected:
