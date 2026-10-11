@@ -245,7 +245,9 @@ cursor, `7` rate-limited or unavailable. Under `--json` the error also carries
 `retryable`, `userActionRequired` and, where the API gives one, an `action`.
 `INSUFFICIENT_SCOPE` means the token predates the key's integration access: the CLI
 mints a fresh one and retries once, and if that is refused too, the key has no
-integration access yet (Starter or above; rotate the key in Financy → Settings → API).
+integration access: a key set to read-only ("מידע בלבד" in Financy → Settings → API access)
+cannot reach integrations or payments, so turn that off; otherwise check the plan is
+Starter or above and rotate the key there.
 The integrations API lives at `https://api.open-finance.ai/integrations`; override it
 with `FINANCY_INTEGRATIONS_URL` (it otherwise follows `FINANCY_API_URL`'s host).
 

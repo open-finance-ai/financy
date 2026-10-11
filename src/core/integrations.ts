@@ -48,8 +48,9 @@ async function integrationsAuthorized<T>(config: Config, now: Date, request: (to
       throw new CliError(
         EXIT.PLAN,
         'INSUFFICIENT_SCOPE',
-        "this API key doesn't have integration access yet — integrations need a Starter plan or above, " +
-          'and the key may need refreshing: rotate it in Financy → Settings → API, then run financy setup',
+        "this API key doesn't have integration access — if the key is set to read-only, turn off " +
+          '"מידע בלבד" (information only) in Financy → Settings → API access; otherwise integrations need a ' +
+          'Starter plan or above, and the key may need refreshing: rotate it there, then run financy setup',
         error.extra,
       )
     }
