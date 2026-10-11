@@ -6,6 +6,8 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-10-11
+
 ### Added
 
 - **Invoices from your business system (Invoice4U).** New commands read the
@@ -196,7 +198,8 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.4.0
 [0.3.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.3.0
 [0.2.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.2.0
 [0.1.3]: https://github.com/open-finance-ai/financy/releases/tag/v0.1.3

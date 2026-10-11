@@ -1,7 +1,7 @@
 {
   "name": "financy",
-  "version": "0.3.0",
-  "description": "Your Open-Finance accounts, balances and transactions in the terminal \u2014 with an embedded MCP server and agent skills",
+  "version": "0.4.0",
+  "description": "Your Open-Finance accounts, balances and transactions in the terminal — with an embedded MCP server and agent skills",
   "type": "module",
   "bin": {
     "financy": "dist/bin.js"
