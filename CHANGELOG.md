@@ -6,6 +6,15 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-10-11
+
+### Fixed
+
+- The `INSUFFICIENT_SCOPE` error after the fresh-token retry now names the most likely
+  cause first: an API key set to read-only ("מידע בלבד" in Financy → Settings → API
+  access) cannot reach integrations or payments, so turn that off. Rotating the key does
+  not lift a read-only setting; the plan and rotation hints follow.
+
 ## [0.4.0] — 2026-10-11
 
 ### Added
@@ -198,7 +207,8 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/open-finance-ai/financy/releases/tag/v0.4.1
 [0.4.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.4.0
 [0.3.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.3.0
 [0.2.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.2.0

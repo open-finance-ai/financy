@@ -462,6 +462,8 @@ describe('a token minted before the key had integration access', () => {
     const { error } = JSON.parse(stderr)
     expect(error.code).toBe('INSUFFICIENT_SCOPE')
     expect(error.message).toMatch(/doesn't have integration access/)
+    expect(error.message).toMatch(/read-only/)
+    expect(error.message).toMatch(/מידע בלבד/)
     expect(error.message).toMatch(/Starter/)
     expect(error.message).toMatch(/rotate/)
   })
