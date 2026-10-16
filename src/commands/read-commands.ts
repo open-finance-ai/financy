@@ -176,7 +176,7 @@ export function registerReadCommands(
   // --- connections ---
   const connections = program
     .command('connections')
-    .description('Bank/card connections and their fetch state')
+    .description('Bank, card and wallet (bit) connections and their fetch state')
   connections
     .command('list')
     .option('--limit <n>', 'page size')
@@ -200,7 +200,7 @@ export function registerReadCommands(
   const accounts = program.command('accounts').description('Accounts with balances')
   accounts
     .command('list')
-    .option('--type <type>', 'CHECKING|CARD|LOAN|SAVINGS|SECURITY')
+    .option('--type <type>', 'CHECKING|CARD|LOAN|SAVINGS|SECURITY (bit wallet: use --connection)')
     .option('--connection <id>', 'filter by connection')
     .option('--limit <n>', 'page size')
     .option('--cursor <token>', 'resume from a nextPage cursor')
@@ -227,7 +227,7 @@ export function registerReadCommands(
     .option('--to <date>', 'latest transaction date (YYYY-MM-DD)')
     .option('--account <id>', 'filter by account')
     .option('--connection <id>', 'filter by connection')
-    .option('--type <type>', 'BANK|CARD')
+    .option('--type <type>', 'BANK|CARD (bit wallet: use --connection)')
     .option('--limit <n>', 'page size')
     .option('--cursor <token>', 'resume from a nextPage cursor')
     .option('--all', 'auto-paginate to the end')
@@ -261,7 +261,7 @@ export function registerReadCommands(
     })
 
   // --- providers ---
-  const providers = program.command('providers').description('Reference data: banks and branches')
+  const providers = program.command('providers').description('Reference data: providers (banks, cards, wallets) and bank branches')
   providers
     .command('list')
     .option('--json', 'machine-readable output')

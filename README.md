@@ -74,11 +74,11 @@ UTF-16 and `Set-Content` writes a UTF-8 BOM. The CLI now reads all three, but
 
 ```
 financy status                       Are my connections fresh? one-line-per-bank rollup
-financy connections list|get <id>    Bank/card connections and their fetch state
+financy connections list|get <id>    Bank, card and wallet (bit) connections and their fetch state
 financy accounts list|get <id>       Accounts with balances (securities embedded)
 financy transactions list|get <id>   Transactions with --from/--to/--account/--type filters
 financy categories                   The category taxonomy (English + Hebrew)
-financy providers list|branches      Reference data: banks and branches
+financy providers list|branches      Reference data: providers (banks, cards, wallets) and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
 financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U)
 financy receivables                  Who owes you what: open and overdue invoices, aged per customer
