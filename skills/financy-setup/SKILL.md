@@ -143,20 +143,26 @@ If anything looks stale, do not refresh on your own initiative. Hand off to the
 `freshness-check` skill, which knows how to weigh staleness against the 20-credit
 cost.
 
-## Business systems (invoicing)
+## Business systems (invoicing and card clearing)
 
-The invoicing commands need CLI **0.4.0** or later (`financy --version`; `financy update` if older).
+The invoicing commands need CLI **0.4.0** or later, and `financy settlements` needs
+**0.4.2** (`financy --version`; `financy update` if older).
 
 Besides bank and card data, the same credentials read a connected invoicing
-system — Invoice4U today. If the user mentions invoices, receipts, customers or
-"who owes me", check what is connected:
+system — Invoice4U, Morning or SUMIT — and a card-clearing integration (Isracard
+Business). If the user mentions invoices, receipts, customers, "who owes me" or
+card payouts, check what is connected:
 
 ```bash
 financy integrations list --json
 ```
 
-- An empty list means nothing is connected yet. The user connects Invoice4U in the
-  Financy app, on the **Connections** page; the CLI cannot connect it.
+- An empty list means nothing is connected yet. The user connects a system in the
+  Financy app, under **Connections → Business systems**; the CLI cannot connect it.
+- Each integration has a `category`: `invoicing` (documents, customers, receivables)
+  or `clearing` (card payouts only — `financy settlements list <integrationId>`).
+  Never add `expected` and `settled` payouts together, and never add settled payouts
+  on top of the bank balance: they are already in it.
 - Exit `4` with `"code":"UPGRADE_REQUIRED"` means invoicing needs a paid plan
   (Starter and above). Treat it like *Handling exit 4* below.
 - An unknown-command error means the installed CLI predates these commands —
@@ -167,7 +173,8 @@ Once connected: `financy receivables` (who owes what), `financy documents list
 `financy proposals list|get`. `financy proposals create <integrationId> --file
 draft.json` only creates a **draft**: nothing is issued until the user approves it
 in Financy at the printed approval link. Never describe a draft as an issued
-invoice, and never try to approve it yourself — the CLI cannot.
+invoice, and never try to approve it yourself — the CLI cannot. Drafts work with
+Invoice4U and Morning; SUMIT is read-only.
 
 ## Handling exit 4
 
@@ -220,8 +227,8 @@ claude mcp add financy -- npx financy mcp
 ```
 
 The server resolves credentials exactly as the CLI does. It also serves the
-invoicing tools (`list_integrations`, `get_receivables`, `list_invoicing_documents`,
-`draft_invoice`, …); a `draft_*` tool creates a draft the user must approve in
+invoicing and clearing tools (`list_integrations`, `get_receivables`,
+`list_invoicing_documents`, `list_clearing_settlements`, `draft_invoice`, …); a `draft_*` tool creates a draft the user must approve in
 Financy before anything is issued. Until setup is
 complete, every tool returns a structured `NOT_CONFIGURED` error — which is your
 signal to run this skill.

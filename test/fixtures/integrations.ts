@@ -106,3 +106,42 @@ export const upgradeRequired = {
   action: { kind: 'upgrade', plan: 'starter' },
   requestId: 'req_test_1',
 }
+
+export const CLEARING_ID = 'intg_01J9ZK7C1E2A3R4I5N6G7I8D9X'
+
+/** A card-clearing integration (Isracard Business): payouts, no documents. */
+export const clearingIntegration = {
+  id: CLEARING_ID,
+  connectorId: 'isracard',
+  connectorName: 'ישראכרט עסקים',
+  category: 'clearing',
+  label: 'ישראכרט עסקים',
+  status: 'active',
+  auth: { state: 'active', reason: null, attention: null },
+  sync: { settlements: { state: 'idle', stale: false, lastSuccessAt: '2026-10-18T05:00:00Z' } },
+  externalAiApps: 'read',
+}
+
+/** Two payouts: one already in the bank, one expected. The merchant number is a placeholder. */
+export const settlementSettled = {
+  recordType: 'settlement',
+  id: 'iset_01J9ZK8S1E2T3T4L5E6D7A8B9C',
+  providerId: '0000000:2026-10-08:ILS',
+  integrationId: CLEARING_ID,
+  connectorId: 'isracard',
+  status: 'settled',
+  paymentDate: '2026-10-08',
+  branch: '0000000',
+  payoutAccount: '1234',
+  currency: 'ILS',
+  amounts: { grossMinor: 1250000, commissionMinor: 12500, vatMinor: 2125, discountMinor: 0, chargingFeeMinor: 0, advanceRepaymentFeeMinor: 0, netMinor: 1235375 },
+}
+
+export const settlementExpected = {
+  ...settlementSettled,
+  id: 'iset_01J9ZK9E1X2P3E4C5T6E7D8A9B',
+  providerId: '0000000:2026-10-22:ILS',
+  status: 'expected',
+  paymentDate: '2026-10-22',
+  amounts: { grossMinor: 980000, commissionMinor: 9800, vatMinor: 1666, discountMinor: 0, chargingFeeMinor: 0, advanceRepaymentFeeMinor: 0, netMinor: 968534 },
+}

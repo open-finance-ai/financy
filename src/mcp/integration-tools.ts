@@ -8,6 +8,7 @@ import {
   fetchInvoicingDocument,
   fetchInvoicingCustomers,
   fetchInvoicingCustomer,
+  fetchClearingSettlements,
   fetchProposals,
   fetchProposal,
   createDraft,
@@ -15,7 +16,7 @@ import {
 import { TOOLS, dispatchTool, type CallToolIO, type JsonSchema, type ToolDef } from './tools.js'
 
 /*
- * Business-system (invoicing) tools, served only by this CLI's own stdio server
+ * Business-system tools (invoicing and card clearing), served only by this CLI's own stdio server
  * (`financy mcp`). They are deliberately NOT part of the published `TOOLS` table:
  * hosts that import `TOOLS` from this package serve their own invoicing tools
  * under these same names, and adding them there would register every name twice.
@@ -35,6 +36,21 @@ function required(args: Record<string, unknown>, key: string): string {
 
 function selected(args: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
   return Object.fromEntries(keys.filter((key) => args[key] !== undefined).map((key) => [key, args[key]]))
+}
+
+// The merchant's number at the acquirer sits in `branch` and inside `providerId`; the
+// integration id already stands for it, so neither reaches the model (as on the hosted server).
+const SETTLEMENT_HIDDEN = new Set(['branch', 'providerId'])
+
+function withoutMerchantNumber<T extends { data: unknown[] }>(envelope: T): T {
+  return {
+    ...envelope,
+    data: envelope.data.map((item) =>
+      item !== null && typeof item === 'object'
+        ? Object.fromEntries(Object.entries(item).filter(([key]) => !SETTLEMENT_HIDDEN.has(key)))
+        : item,
+    ),
+  }
 }
 
 function paymentOf(args: Record<string, unknown>): Record<string, unknown> {
@@ -110,19 +126,19 @@ export const INTEGRATION_TOOLS: ToolDef[] = [
   {
     name: 'list_integrations',
     description:
-      "List the business systems (invoicing software such as Invoice4U) connected to Financy, with each one's connection health and sync state. Start here to find an integrationId.",
+      "List the business systems connected to Financy, each with its category: invoicing (invoicing software such as Invoice4U, Morning or SUMIT, with documents and customers) or clearing (a card acquirer such as Isracard Business, with its payouts to the business). Each one has its connection health and sync state. Start here to find an integrationId.",
     inputSchema: schema({}),
     run: (_a, ctx) => fetchIntegrations(ctx.config, ctx.now),
   },
   {
     name: 'get_integration',
-    description: 'Get one connected business system: connection health, per-stream sync state and data freshness.',
+    description: 'Get one connected business system, invoicing or clearing: connection health, per-stream sync state and data freshness.',
     inputSchema: schema({ integrationId }, ['integrationId']),
     run: (a, ctx) => fetchIntegration(ctx.config, ctx.now, required(a, 'integrationId')),
   },
   {
     name: 'get_receivables',
-    description: `Who owes the business money: open receivables across connected business systems, with totals and aging buckets per currency and per customer. Each integration entry says how fresh its data is and whether its first sync is still running. ${AMOUNTS}`,
+    description: `Who owes the business money: open receivables across connected invoicing systems, with totals and aging buckets per currency and per customer. Each integration entry says how fresh its data is and whether its first sync is still running. Clearing integrations are left out: their card payouts (list_clearing_settlements) are different money, never part of receivables. ${AMOUNTS}`,
     inputSchema: schema({
       integrationIds: { type: 'array', items: integrationId, description: 'limit to these integrations (default: all)' },
       format: { type: 'string', enum: ['concise', 'detailed'], description: "detailed also lists each customer's open documents" },
@@ -192,6 +208,31 @@ export const INTEGRATION_TOOLS: ToolDef[] = [
     inputSchema: schema({ integrationId, counterpartyId }, ['integrationId', 'counterpartyId']),
     run: (a, ctx) =>
       fetchInvoicingCustomer(ctx.config, ctx.now, required(a, 'integrationId'), required(a, 'counterpartyId')),
+  },
+  {
+    name: 'list_clearing_settlements',
+    description: `List the card payouts of one connected clearing integration (Isracard Business), one record per payout (a payment date and currency), filtered by status or payment date. status expected: a future credit the acquirer will pay, not yet in the bank; one dated before today (Israel time) that never became settled is unconfirmed. status settled: already paid into the bank account ending in payoutAccount, so already part of that account's bank balance and transactions; never count it on top of them. Never add expected and settled amounts together, and never merge payouts with invoice receivables: they are different money. amounts: grossMinor, the deductions as positive numbers (commissionMinor, vatMinor, discountMinor, chargingFeeMinor, advanceRepaymentFeeMinor) and netMinor, which is gross minus all deductions; null is unknown. freshness.dataAsOf is when the payouts were last synced. Results are not in date order. ${PAGING_NOTE} ${AMOUNTS}`,
+    inputSchema: schema(
+      {
+        integrationId,
+        status: { type: 'string', enum: ['expected', 'settled'], description: 'expected (a future credit, not yet paid) or settled (already paid into the bank)' },
+        paymentFrom: localDate('payment date on or after, YYYY-MM-DD'),
+        paymentTo: localDate('payment date on or before, YYYY-MM-DD'),
+        ...PAGING,
+      },
+      ['integrationId'],
+    ),
+    run: async (a, ctx) =>
+      withoutMerchantNumber(
+        await fetchClearingSettlements(ctx.config, ctx.now, required(a, 'integrationId'), {
+          status: str(a.status),
+          from: str(a.paymentFrom),
+          to: str(a.paymentTo),
+          limit: str(a.limit),
+          cursor: str(a.cursor),
+          all: bool(a.all),
+        }),
+      ),
   },
   {
     name: 'list_proposals',

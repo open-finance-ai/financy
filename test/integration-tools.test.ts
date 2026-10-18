@@ -14,6 +14,8 @@ import {
   receivables,
   proposal,
   upgradeRequired,
+  CLEARING_ID,
+  settlementSettled,
 } from './fixtures/integrations.js'
 
 let teardown: (() => Promise<void>) | undefined
@@ -52,6 +54,7 @@ describe('invoicing tool registry', () => {
         'get_invoicing_document',
         'list_invoicing_customers',
         'get_invoicing_customer',
+        'list_clearing_settlements',
         'list_proposals',
         'get_proposal',
         ...DRAFT_TOOLS,
@@ -214,6 +217,33 @@ describe('invoicing read tools', () => {
     await callLocalTool('list_invoicing_customers', { integrationId: INTEGRATION_ID, q: 'סטודיו' }, { env: env() })
 
     expect(new URLSearchParams(seen.split('?')[1]).get('q')).toBe('סטודיו')
+  })
+
+  it('list_clearing_settlements maps its filters and hides the merchant number', async () => {
+    const pool = setup()
+    let seen = ''
+    pool
+      .intercept({ path: (p) => p.startsWith(`${BASE}/${CLEARING_ID}/settlements`), method: 'GET' })
+      .reply((opts) => {
+        seen = opts.path
+        return { statusCode: 200, data: JSON.stringify({ items: [settlementSettled], nextCursor: null, freshness }) }
+      })
+
+    const result = (await callLocalTool(
+      'list_clearing_settlements',
+      { integrationId: CLEARING_ID, status: 'expected', paymentFrom: '2026-10-01', paymentTo: '2026-10-31', limit: 10 },
+      { env: env() },
+    )) as { data: Record<string, unknown>[]; freshness: unknown }
+
+    const q = new URLSearchParams(seen.split('?')[1])
+    expect(q.get('status')).toBe('expected')
+    expect(q.get('paymentFrom')).toBe('2026-10-01')
+    expect(q.get('paymentTo')).toBe('2026-10-31')
+    expect(q.get('limit')).toBe('10')
+    expect(result.data[0]).not.toHaveProperty('branch')
+    expect(result.data[0]).not.toHaveProperty('providerId')
+    expect(result.data[0]).toMatchObject({ id: settlementSettled.id, payoutAccount: '1234', amounts: settlementSettled.amounts })
+    expect(result.freshness).toEqual(freshness)
   })
 
   it('get_proposal returns the draft with its approval link', async () => {

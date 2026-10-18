@@ -80,10 +80,11 @@ financy transactions list|get <id>   Transactions with --from/--to/--account/--t
 financy categories                   The category taxonomy (English + Hebrew)
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
-financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U)
+financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT; clearing: Isracard Business)
 financy receivables                  Who owes you what: open and overdue invoices, aged per customer
 financy documents list|get           Invoices, receipts and credit notes in a business system
 financy customers list|get           Customers in a business system
+financy settlements list             Card payouts from a clearing integration (Isracard Business)
 financy proposals list|get|create    Document drafts — issued only after you approve them in Financy
 financy config                       Show resolved endpoints + credential sources (secret masked)
 financy skills list|install          Agent skills bundled with the CLI
@@ -176,16 +177,17 @@ who you expect to pay if you have one.
 | «מה התשלום הממוצע בביט החודש לעומת החודש שעבר?» | What's the average bit payment this month versus last month? |
 | «תבנה לי דאשבורד שאני פותח כל בוקר: הכנסות מביט ומהבנק, הוצאות בישראכרט, ומי עוד לא שילם» | Build me a dashboard I open every morning: income from bit and the bank, Isracard spending, and who still hasn't paid. |
 
-## Invoices (Invoice4U)
+## Invoices (Invoice4U, Morning, SUMIT)
 
 Connect your invoicing system to Financy and the CLI reads it next to your bank
 data: who owes you what, every invoice and receipt, your customers — and it can
-**draft** documents for you to approve. Invoice4U is supported today; it needs a
-paid plan (Starter and above), and a free account gets exit `4` with the code
-`UPGRADE_REQUIRED`.
+**draft** documents for you to approve. Supported systems are **Invoice4U**,
+**Morning** (formerly Green Invoice) and **SUMIT**. Drafts work with Invoice4U and
+Morning; SUMIT is read-only for now. Invoicing needs a paid plan (Starter and
+above), and a free account gets exit `4` with the code `UPGRADE_REQUIRED`.
 
-Connect Invoice4U in the Financy app, on the **Connections** page; the CLI reads
-connections, it does not create them. Then:
+Connect your system in the Financy app, under **Connections → Business systems**;
+the CLI reads connections, it does not create them. Then:
 
 ```sh
 financy integrations list                     # copy the integration ID (intg_…)
@@ -211,11 +213,28 @@ units (`…Minor`, agorot for ILS) exactly as the API returns it, and record lis
 carry a `freshness` object saying how recent the synced data is. Record lists page
 with `--limit`, `--cursor` and `--all`; `proposals list` takes only `--limit` (max 50).
 
+### Card payouts (Isracard Business)
+
+If the business clears cards with Isracard, connect **Isracard Business** in the
+Financy app (Pro and above). It is a **clearing** integration: no invoices, just
+the payouts Isracard makes to the business — `expected` (a future credit, not yet in
+the bank) and `settled` (already paid into the account ending in `TO ACCOUNT`, so
+already part of that account's balance and transactions; never add it on top).
+
+```sh
+financy integrations list                         # the clearing one has CATEGORY clearing
+financy settlements list <integrationId> --status expected
+financy settlements list <integrationId> --from 2026-10-01 --to 2026-10-31 --all --json
+```
+
+The table shows gross and net (after commission, VAT and fees) in shekels, latest
+payment date first; `--json` keeps every deduction in minor units.
+
 ### Drafting a document
 
 `financy proposals create` sends a draft request and creates a **draft** — nothing
-is issued. The document is created in Invoice4U only after you open the returned
-approval link and approve it in Financy:
+is issued. The document is created in your invoicing system (Invoice4U or Morning)
+only after you open the returned approval link and approve it in Financy:
 
 ```sh
 cat > draft.json <<'JSON'
@@ -289,7 +308,7 @@ confirm with the user first.
 The local server also serves the invoicing tools — `list_integrations`,
 `get_integration`, `get_receivables`, `list_invoicing_documents`,
 `get_invoicing_document`, `list_invoicing_customers`, `get_invoicing_customer`,
-`list_proposals`, `get_proposal`, and the draft tools `draft_invoice`,
+`list_clearing_settlements`, `list_proposals`, `get_proposal`, and the draft tools `draft_invoice`,
 `draft_invoice_receipt`, `draft_receipt` and `draft_credit_note`. A draft tool only
 creates a draft: its description tells the agent to show the user the approval link,
 and nothing is issued until the user approves it in Financy. These tools are not in

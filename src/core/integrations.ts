@@ -6,9 +6,10 @@ import { CliError } from '../errors.js'
 import { EXIT } from '../exit-codes.js'
 import type { ListArgs, ListEnvelope, GetEnvelope } from './read.js'
 
-// --- Business-system integrations (invoicing: Invoice4U today). The single source
-// of truth for paths + query mapping, shared by the CLI commands
-// (src/commands/integration-commands.ts) and the local MCP server's tools. ---
+// --- Business-system integrations: invoicing (Invoice4U, Morning, SUMIT) and card
+// clearing (Isracard Business). The single source of truth for paths + query
+// mapping, shared by the CLI commands (src/commands/integration-commands.ts) and
+// the local MCP server's tools. ---
 
 interface CursorPage<T> {
   items?: T[]
@@ -196,6 +197,32 @@ export async function fetchInvoicingCustomer<T>(
     `/${segment('integration id', integrationId)}/customers/${segment('customer id', customerId)}`,
   )
   return { data: body.customer, ...(body.freshness === undefined ? {} : { freshness: body.freshness }) }
+}
+
+export interface SettlementListArgs extends ListArgs {
+  status?: string
+  from?: string
+  to?: string
+}
+
+/**
+ * Card payouts of one clearing integration (Isracard Business): `expected` is a
+ * future credit not yet in the bank, `settled` is already paid into the payout
+ * account (and so already in that account's balance and transactions).
+ */
+export function fetchClearingSettlements<T>(
+  config: Config,
+  now: Date,
+  integrationId: string,
+  args: SettlementListArgs,
+): Promise<ListEnvelope<T>> {
+  return cursorList<T>(
+    config,
+    now,
+    `/${segment('integration id', integrationId)}/settlements`,
+    { status: args.status, paymentFrom: args.from, paymentTo: args.to, limit: args.limit, cursor: args.cursor },
+    !!args.all,
+  )
 }
 
 export interface ProposalListArgs {

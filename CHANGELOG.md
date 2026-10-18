@@ -6,6 +6,27 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-10-19
+
+### Added
+
+- **Card payouts from Isracard Business.** `financy settlements list <integrationId>`
+  reads a clearing integration's payouts (`GET /{integrationId}/settlements`), with
+  `--status expected|settled`, `--from`/`--to` on the payment date, and the usual
+  `--limit`/`--cursor`/`--all`. The table shows gross and net in shekels, latest payment
+  first; `--json` keeps every deduction in minor units.
+- The local MCP server (`financy mcp`) serves **`list_clearing_settlements`**, under the
+  same name and description as the hosted connector, without the merchant number
+  (`branch`, `providerId`).
+
+### Changed
+
+- `financy integrations list` shows each integration's **category** (invoicing or
+  clearing), and its SYNC columns read the payouts stream for a clearing integration.
+- Help, README, the `financy-setup` skill and the MCP tool descriptions name every
+  supported system: Invoice4U, Morning and SUMIT for invoicing (drafts with Invoice4U
+  and Morning; SUMIT is read-only), Isracard Business for card clearing.
+
 ## [0.4.1] — 2026-10-11
 
 ### Fixed
@@ -207,7 +228,8 @@ First public release of the `financy` CLI (v1).
   ship here instead, so a skill can never drift from the CLI version it drives.
   `@open-finance/skills` is deprecated.
 
-[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/open-finance-ai/financy/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/open-finance-ai/financy/releases/tag/v0.4.2
 [0.4.1]: https://github.com/open-finance-ai/financy/releases/tag/v0.4.1
 [0.4.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.4.0
 [0.3.0]: https://github.com/open-finance-ai/financy/releases/tag/v0.3.0
