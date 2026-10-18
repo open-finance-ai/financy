@@ -12,6 +12,7 @@ import {
   fetchInvoicingDocument,
   fetchInvoicingCustomers,
   fetchInvoicingCustomer,
+  fetchClearingSettlements,
   fetchProposals,
   fetchProposal,
   createDraft,
@@ -33,14 +34,23 @@ export const money = (minor: unknown, currency: unknown = 'ILS'): string => {
 // --- Row shapes: the subset of the integrations API views the tables read. All
 // optional; --json emits the API objects verbatim. ---
 
+interface StreamSync {
+  state?: string
+  lastSuccessAt?: string | null
+}
+
 interface Integration {
   id: string
   connectorName?: string
+  category?: string
   label?: string
   auth?: { state?: string; attention?: { message?: string } | null }
-  sync?: { documents?: { state?: string; lastSuccessAt?: string | null } }
+  sync?: { documents?: StreamSync; settlements?: StreamSync }
   externalAiApps?: string
 }
+
+/** The stream that says whether an integration is current: documents for invoicing, payouts for clearing. */
+const primarySync = (i: Integration): StreamSync | undefined => i.sync?.documents ?? i.sync?.settlements
 
 interface InvoicingDocument {
   id: string
@@ -59,6 +69,15 @@ interface InvoicingCustomer {
   name?: string
   businessTaxId?: string | null
   active?: boolean
+}
+
+interface Settlement {
+  id: string
+  status?: string
+  paymentDate?: string
+  payoutAccount?: string | null
+  currency?: string
+  amounts?: { grossMinor?: number | null; netMinor?: number | null }
 }
 
 interface Proposal {
@@ -92,10 +111,11 @@ interface Receivables {
 const INTEGRATION_COLUMNS: Column<Integration>[] = [
   { header: 'ID', value: (i) => i.id },
   { header: 'SYSTEM', value: (i) => dash(i.connectorName) },
+  { header: 'CATEGORY', value: (i) => dash(i.category) },
   { header: 'LABEL', value: (i) => dash(i.label) },
   { header: 'AUTH', value: (i) => dash(i.auth?.state) },
-  { header: 'SYNC', value: (i) => dash(i.sync?.documents?.state) },
-  { header: 'SYNCED AT', value: (i) => dash(i.sync?.documents?.lastSuccessAt) },
+  { header: 'SYNC', value: (i) => dash(primarySync(i)?.state) },
+  { header: 'SYNCED AT', value: (i) => dash(primarySync(i)?.lastSuccessAt) },
 ]
 
 const DOCUMENT_COLUMNS: Column<InvoicingDocument>[] = [
@@ -122,6 +142,20 @@ const CUSTOMER_COLUMNS: Column<InvoicingCustomer>[] = [
   { header: 'TAX ID', value: (c) => dash(c.businessTaxId) },
   { header: 'ACTIVE', value: (c) => (c.active === false ? 'no' : 'yes') },
 ]
+
+const SETTLEMENT_COLUMNS: Column<Settlement>[] = [
+  { header: 'PAYMENT DATE', value: (s) => dash(s.paymentDate) },
+  { header: 'STATUS', value: (s) => dash(s.status) },
+  { header: 'GROSS', value: (s) => money(s.amounts?.grossMinor, s.currency) },
+  { header: 'NET', value: (s) => money(s.amounts?.netMinor, s.currency) },
+  { header: 'TO ACCOUNT', value: (s) => dash(s.payoutAccount) },
+  { header: 'ID', value: (s) => s.id },
+]
+
+/** Table order for payouts: latest payment date first, like the documents table. */
+export function latestPaymentFirst(a: Settlement, b: Settlement): number {
+  return (b.paymentDate ?? '').localeCompare(a.paymentDate ?? '')
+}
 
 const PROPOSAL_COLUMNS: Column<Proposal>[] = [
   { header: 'ID', value: (p) => p.id },
@@ -216,7 +250,7 @@ interface DocumentOpts extends PagingOpts {
   number?: string
 }
 
-/** Register the business-system integration commands (integrations, receivables, documents, customers, proposals). */
+/** Register the business-system integration commands (integrations, receivables, documents, customers, settlements, proposals). */
 export function registerIntegrationCommands(
   program: Command,
   base: ReadBase,
@@ -227,7 +261,7 @@ export function registerIntegrationCommands(
   // --- integrations ---
   const integrations = program
     .command('integrations')
-    .description('Connected business systems (invoicing: Invoice4U)')
+    .description('Connected business systems (invoicing: Invoice4U, Morning, SUMIT; clearing: Isracard Business)')
   integrations
     .command('list')
     .option('--json', 'machine-readable output')
@@ -327,6 +361,26 @@ export function registerIntegrationCommands(
     .action(async (integrationId: string, customerId: string) => {
       const config = await loadOrThrow(base.env)
       setExit(renderGet(ctx, await fetchInvoicingCustomer(config, base.now, integrationId, customerId)))
+    })
+
+  // --- settlements (card clearing payouts) ---
+  const settlements = program
+    .command('settlements')
+    .description('Card payouts from a clearing integration (Isracard Business): expected and settled')
+  settlements
+    .command('list <integrationId>')
+    .option('--status <status>', 'expected (a future credit, not yet in the bank) | settled (already paid into the bank)')
+    .option('--from <date>', 'payment date on or after (YYYY-MM-DD)')
+    .option('--to <date>', 'payment date on or before (YYYY-MM-DD)')
+    .option('--limit <n>', 'page size (max 200)')
+    .option('--cursor <token>', 'resume from a nextPage cursor')
+    .option('--all', 'auto-paginate to the end')
+    .option('--json', 'machine-readable output')
+    .action(async (integrationId: string, opts: PagingOpts & { status?: string; from?: string; to?: string }) => {
+      const config = await loadOrThrow(base.env)
+      const envelope = await fetchClearingSettlements<Settlement>(config, base.now, integrationId, opts)
+      const rows = base.json ? envelope : { ...envelope, data: [...envelope.data].sort(latestPaymentFirst) }
+      setExit(renderList(ctx, rows, SETTLEMENT_COLUMNS))
     })
 
   // --- proposals (document drafts) ---

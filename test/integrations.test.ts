@@ -18,6 +18,10 @@ import {
   proposal,
   draftRequest,
   upgradeRequired,
+  CLEARING_ID,
+  clearingIntegration,
+  settlementSettled,
+  settlementExpected,
 } from './fixtures/integrations.js'
 
 const ENV = {
@@ -517,6 +521,66 @@ describe('financy customers', () => {
     const { stdout } = await runCli(['customers', 'get', INTEGRATION_ID, CUSTOMER_ID, '--json'], { env: ENV })
 
     expect(JSON.parse(stdout)).toEqual({ data: customer, freshness })
+  })
+})
+
+describe('financy settlements', () => {
+  it('maps its filters to the settlements route and renders amounts from minor units', async () => {
+    const pool = setup()
+    const seen = capture(pool, 'GET', `${BASE}/${CLEARING_ID}/settlements`, {
+      items: [settlementSettled],
+      nextCursor: null,
+      freshness,
+    })
+
+    const { code, stdout } = await runCli(
+      ['settlements', 'list', CLEARING_ID, '--status', 'settled', '--from', '2026-10-01', '--to', '2026-10-31', '--limit', '20'],
+      { env: ENV },
+    )
+
+    expect(code).toBe(0)
+    const q = query(seen[0]!.path)
+    expect(q.get('status')).toBe('settled')
+    expect(q.get('paymentFrom')).toBe('2026-10-01')
+    expect(q.get('paymentTo')).toBe('2026-10-31')
+    expect(q.get('limit')).toBe('20')
+    expect(stdout).toContain('₪12,500.00')
+    expect(stdout).toContain('₪12,353.75')
+    expect(stdout).toContain('1234')
+  })
+
+  it('sorts the table latest payment first, but keeps --json in API order', async () => {
+    const pool = setup()
+    pool
+      .intercept({ path: (p) => p.startsWith(`${BASE}/${CLEARING_ID}/settlements`), method: 'GET' })
+      .reply(200, { items: [settlementSettled, settlementExpected], nextCursor: null, freshness })
+      .times(2)
+
+    const table = await runCli(['settlements', 'list', CLEARING_ID], { env: ENV })
+    const json = await runCli(['settlements', 'list', CLEARING_ID, '--json'], { env: ENV })
+
+    expect(table.stdout.indexOf(settlementExpected.id)).toBeLessThan(table.stdout.indexOf(settlementSettled.id))
+    expect(JSON.parse(json.stdout).data.map((s: { id: string }) => s.id)).toEqual([settlementSettled.id, settlementExpected.id])
+  })
+
+  it('refuses an id that is not id-shaped before calling the API', async () => {
+    setup()
+    const { code } = await runCli(['settlements', 'list', '../proposals'], { env: ENV })
+    expect(code).toBe(2)
+  })
+})
+
+describe('financy integrations with a clearing integration', () => {
+  it('shows the category and the payouts sync for a clearing integration', async () => {
+    const pool = setup()
+    capture(pool, 'GET', `${BASE}/`, { items: [integration, clearingIntegration] })
+
+    const { code, stdout } = await runCli(['integrations', 'list'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(stdout).toContain('clearing')
+    expect(stdout).toContain('invoicing')
+    expect(stdout).toContain('2026-10-18T05:00:00Z')
   })
 })
 
