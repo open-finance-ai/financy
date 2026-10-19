@@ -89,6 +89,13 @@ describe('invoicing tool registry', () => {
     }
   })
 
+  it('list_integrations names every supported invoicing system and the clearing one', () => {
+    const tool = INTEGRATION_TOOLS.find((t) => t.name === 'list_integrations')!
+    for (const system of ['Invoice4U', 'Morning', 'SUMIT', 'iCount', 'Isracard Business']) {
+      expect(tool.description).toContain(system)
+    }
+  })
+
   it('gives every tool a description and an object input schema', () => {
     for (const tool of INTEGRATION_TOOLS) {
       expect(tool.description.length).toBeGreaterThan(20)

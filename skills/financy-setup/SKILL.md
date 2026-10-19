@@ -149,9 +149,9 @@ The invoicing commands need CLI **0.4.0** or later, and `financy settlements` ne
 **0.4.2** (`financy --version`; `financy update` if older).
 
 Besides bank and card data, the same credentials read a connected invoicing
-system — Invoice4U, Morning or SUMIT — and a card-clearing integration (Isracard
-Business). If the user mentions invoices, receipts, customers, "who owes me" or
-card payouts, check what is connected:
+system — Invoice4U, Morning, SUMIT or iCount — and a card-clearing integration
+(Isracard Business). If the user mentions invoices, receipts, customers, "who owes
+me" or card payouts, check what is connected:
 
 ```bash
 financy integrations list --json
@@ -174,7 +174,7 @@ Once connected: `financy receivables` (who owes what), `financy documents list
 draft.json` only creates a **draft**: nothing is issued until the user approves it
 in Financy at the printed approval link. Never describe a draft as an issued
 invoice, and never try to approve it yourself — the CLI cannot. Drafts work with
-Invoice4U and Morning; SUMIT is read-only.
+Invoice4U and Morning; SUMIT and iCount are read-only.
 
 ## Handling exit 4
 

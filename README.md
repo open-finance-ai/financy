@@ -80,7 +80,7 @@ financy transactions list|get <id>   Transactions with --from/--to/--account/--t
 financy categories                   The category taxonomy (English + Hebrew)
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
-financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT; clearing: Isracard Business)
+financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT, iCount; clearing: Isracard Business)
 financy receivables                  Who owes you what: open and overdue invoices, aged per customer
 financy documents list|get           Invoices, receipts and credit notes in a business system
 financy customers list|get           Customers in a business system
@@ -177,14 +177,15 @@ who you expect to pay if you have one.
 | «מה התשלום הממוצע בביט החודש לעומת החודש שעבר?» | What's the average bit payment this month versus last month? |
 | «תבנה לי דאשבורד שאני פותח כל בוקר: הכנסות מביט ומהבנק, הוצאות בישראכרט, ומי עוד לא שילם» | Build me a dashboard I open every morning: income from bit and the bank, Isracard spending, and who still hasn't paid. |
 
-## Invoices (Invoice4U, Morning, SUMIT)
+## Invoices (Invoice4U, Morning, SUMIT, iCount)
 
 Connect your invoicing system to Financy and the CLI reads it next to your bank
 data: who owes you what, every invoice and receipt, your customers — and it can
 **draft** documents for you to approve. Supported systems are **Invoice4U**,
-**Morning** (formerly Green Invoice) and **SUMIT**. Drafts work with Invoice4U and
-Morning; SUMIT is read-only for now. Invoicing needs a paid plan (Starter and
-above), and a free account gets exit `4` with the code `UPGRADE_REQUIRED`.
+**Morning** (formerly Green Invoice), **SUMIT** and **iCount**. Drafts work with
+Invoice4U and Morning; SUMIT and iCount are read-only for now. Invoicing needs a
+paid plan (Starter and above), and a free account gets exit `4` with the code
+`UPGRADE_REQUIRED`.
 
 Connect your system in the Financy app, under **Connections → Business systems**;
 the CLI reads connections, it does not create them. Then:

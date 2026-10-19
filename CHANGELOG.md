@@ -6,6 +6,16 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.3] — 2026-10-19
+
+### Changed
+
+- **iCount** joins the supported invoicing systems. Help, README, the `financy-setup`
+  skill and the `list_integrations` tool description name it next to Invoice4U,
+  Morning and SUMIT. `financy documents`, `customers` and `receivables` already read
+  any connected invoicing system, so no command changes. iCount is read-only for now,
+  like SUMIT: drafts work with Invoice4U and Morning.
+
 ## [0.4.2] — 2026-10-19
 
 ### Added
