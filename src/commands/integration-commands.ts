@@ -261,7 +261,7 @@ export function registerIntegrationCommands(
   // --- integrations ---
   const integrations = program
     .command('integrations')
-    .description('Connected business systems (invoicing: Invoice4U, Morning, SUMIT; clearing: Isracard Business)')
+    .description('Connected business systems (invoicing: Invoice4U, Morning, SUMIT, iCount; clearing: Isracard Business)')
   integrations
     .command('list')
     .option('--json', 'machine-readable output')

@@ -6,7 +6,7 @@ import { CliError } from '../errors.js'
 import { EXIT } from '../exit-codes.js'
 import type { ListArgs, ListEnvelope, GetEnvelope } from './read.js'
 
-// --- Business-system integrations: invoicing (Invoice4U, Morning, SUMIT) and card
+// --- Business-system integrations: invoicing (Invoice4U, Morning, SUMIT, iCount) and card
 // clearing (Isracard Business). The single source of truth for paths + query
 // mapping, shared by the CLI commands (src/commands/integration-commands.ts) and
 // the local MCP server's tools. ---

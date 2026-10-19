@@ -126,7 +126,7 @@ export const INTEGRATION_TOOLS: ToolDef[] = [
   {
     name: 'list_integrations',
     description:
-      "List the business systems connected to Financy, each with its category: invoicing (invoicing software such as Invoice4U, Morning or SUMIT, with documents and customers) or clearing (a card acquirer such as Isracard Business, with its payouts to the business). Each one has its connection health and sync state. Start here to find an integrationId.",
+      "List the business systems connected to Financy, each with its category: invoicing (invoicing software such as Invoice4U, Morning, SUMIT or iCount, with documents and customers) or clearing (a card acquirer such as Isracard Business, with its payouts to the business). Each one has its connection health and sync state. Start here to find an integrationId.",
     inputSchema: schema({}),
     run: (_a, ctx) => fetchIntegrations(ctx.config, ctx.now),
   },
