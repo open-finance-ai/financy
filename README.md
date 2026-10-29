@@ -80,11 +80,17 @@ financy transactions list|get <id>   Transactions with --from/--to/--account/--t
 financy categories                   The category taxonomy (English + Hebrew)
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
-financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT, iCount; clearing: Isracard Business)
+financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT, iCount; ERP: Priority, Rivhit; clearing: Isracard Business)
 financy receivables                  Who owes you what: open and overdue invoices, aged per customer
 financy documents list|get           Invoices, receipts and credit notes in a business system
 financy customers list|get           Customers in a business system
 financy settlements list             Card payouts from a clearing integration (Isracard Business)
+financy payables <id>                What you owe suppliers, aged per supplier (ERP)
+financy suppliers list               Suppliers in an ERP (Priority, Rivhit)
+financy bills list                   Supplier invoices and credits in an ERP
+financy ledger list                  General ledger balances by account and month (ERP)
+financy orders list                  Sales and purchase orders in an ERP
+financy inventory list               Stock on hand and its value at cost (ERP)
 financy proposals list|get|create    Document drafts — issued only after you approve them in Financy
 financy config                       Show resolved endpoints + credential sources (secret masked)
 financy skills list|install          Agent skills bundled with the CLI
@@ -182,8 +188,8 @@ who you expect to pay if you have one.
 Connect your invoicing system to Financy and the CLI reads it next to your bank
 data: who owes you what, every invoice and receipt, your customers — and it can
 **draft** documents for you to approve. Supported systems are **Invoice4U**,
-**Morning** (formerly Green Invoice), **SUMIT** and **iCount**. Drafts work with
-Invoice4U and Morning; SUMIT and iCount are read-only for now. Invoicing needs a
+**Morning** (formerly Green Invoice), **SUMIT** and **iCount**, and drafts work
+with all four. Invoicing needs a
 paid plan (Starter and above), and a free account gets exit `4` with the code
 `UPGRADE_REQUIRED`.
 
@@ -231,11 +237,36 @@ financy settlements list <integrationId> --from 2026-10-01 --to 2026-10-31 --all
 The table shows gross and net (after commission, VAT and fees) in shekels, latest
 payment date first; `--json` keeps every deduction in minor units.
 
+### ERP (Priority, Rivhit)
+
+An ERP connected in the Financy app (Pro and above) is an integration with the
+category **erp**. It is **read only**: the CLI never drafts or issues anything in an
+ERP. Beside its sales documents and customers (`documents`, `customers`), it reads
+what an ERP holds beyond invoicing: suppliers, bills (what you owe suppliers), the
+general ledger by month, sales and purchase orders, and inventory. **Priority**
+(Priority Cloud) and **Rivhit** are supported; these streams are in **beta**. Rivhit's
+ledger holds profit-and-loss accounts only, so it has no balance sheet.
+
+```sh
+financy integrations list                         # the ERP one has CATEGORY erp
+financy payables <integrationId>                  # open bills aged per supplier
+financy payables <integrationId> --detailed --json
+financy suppliers list <integrationId> --search "Ltd"
+financy bills list <integrationId> --open-only --from 2026-09-01
+financy ledger list <integrationId> --from 2026-01 --to 2026-09 --kind income --all --json
+financy orders list <integrationId> --side purchase --status open
+financy inventory list <integrationId> --in-stock-only
+```
+
+Bills and orders show newest first and the ledger shows the latest month first;
+`--json` keeps the API order. Payables are what you owe; never net them against
+`financy receivables`.
+
 ### Drafting a document
 
 `financy proposals create` sends a draft request and creates a **draft** — nothing
-is issued. The document is created in your invoicing system (Invoice4U or Morning)
-only after you open the returned approval link and approve it in Financy:
+is issued. The document is created in your invoicing system (Invoice4U, Morning,
+SUMIT or iCount) only after you open the returned approval link and approve it in Financy:
 
 ```sh
 cat > draft.json <<'JSON'
@@ -309,7 +340,9 @@ confirm with the user first.
 The local server also serves the invoicing tools — `list_integrations`,
 `get_integration`, `get_receivables`, `list_invoicing_documents`,
 `get_invoicing_document`, `list_invoicing_customers`, `get_invoicing_customer`,
-`list_clearing_settlements`, `list_proposals`, `get_proposal`, and the draft tools `draft_invoice`,
+`list_clearing_settlements`, the read-only ERP tools `get_payables`, `list_suppliers`,
+`list_bills`, `list_ledger_balances`, `list_orders` and `list_inventory`,
+`list_proposals`, `get_proposal`, and the draft tools `draft_invoice`,
 `draft_invoice_receipt`, `draft_receipt` and `draft_credit_note`. A draft tool only
 creates a draft: its description tells the agent to show the user the approval link,
 and nothing is issued until the user approves it in Financy. These tools are not in

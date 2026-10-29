@@ -9,6 +9,12 @@ import {
   fetchInvoicingCustomers,
   fetchInvoicingCustomer,
   fetchClearingSettlements,
+  fetchPayables,
+  fetchSuppliers,
+  fetchBills,
+  fetchLedgerBalances,
+  fetchOrders,
+  fetchInventory,
   fetchProposals,
   fetchProposal,
   createDraft,
@@ -67,6 +73,7 @@ const DRAFT =
   AMOUNTS
 const PAGING_NOTE =
   'A page shorter than limit with a non-null nextPage means more may match: call again with that cursor, or pass all.'
+const ERP_PAGING = `Results are not in date order. ${PAGING_NOTE}`
 
 const integrationId = { type: 'string', description: 'an integration id (intg_…) from list_integrations' }
 const documentId = { type: 'string', description: 'a document id (idoc_…) from list_invoicing_documents' }
@@ -126,7 +133,7 @@ export const INTEGRATION_TOOLS: ToolDef[] = [
   {
     name: 'list_integrations',
     description:
-      "List the business systems connected to Financy, each with its category: invoicing (invoicing software such as Invoice4U, Morning, SUMIT or iCount, with documents and customers) or clearing (a card acquirer such as Isracard Business, with its payouts to the business). Each one has its connection health and sync state. Start here to find an integrationId.",
+      'List the business systems connected to Financy, each with its category: invoicing (invoicing software such as Invoice4U, Morning, SUMIT or iCount, with documents and customers), erp (an ERP such as Priority or Rivhit, read only: documents and customers, and also suppliers, bills, the ledger, orders and inventory) or clearing (a card acquirer such as Isracard Business, with its payouts to the business). Each one has its connection health and sync state. Start here to find an integrationId.',
     inputSchema: schema({}),
     run: (_a, ctx) => fetchIntegrations(ctx.config, ctx.now),
   },
@@ -234,6 +241,137 @@ export const INTEGRATION_TOOLS: ToolDef[] = [
         }),
       ),
   },
+  // ERP integrations (category erp: Priority, Rivhit) also hold what an ERP has beyond invoicing: read only.
+  {
+    name: 'get_payables',
+    description: `What the business owes its suppliers on one connected ERP integration (category erp): open supplier invoices aged by due date, totals and aging buckets per currency (never summed across currencies), and the suppliers owed most, most overdue first. A supplier credit is not a debt and is left out. This is the other side of get_receivables: keep the two apart. freshness.dataAsOf is when the bills were last synced. ${AMOUNTS}`,
+    inputSchema: schema(
+      {
+        integrationId,
+        asOf: localDate('age the bills as of this date, YYYY-MM-DD (default: today in Israel)'),
+        format: { type: 'string', enum: ['concise', 'detailed'], description: "detailed lists each supplier's open bills" },
+        supplierLimit: { type: 'integer', description: 'how many suppliers (1–200)' },
+      },
+      ['integrationId'],
+    ),
+    run: (a, ctx) =>
+      fetchPayables(ctx.config, ctx.now, required(a, 'integrationId'), {
+        asOf: str(a.asOf),
+        detailed: a.format === 'detailed',
+        supplierLimit: str(a.supplierLimit),
+      }),
+  },
+  {
+    name: 'list_suppliers',
+    description: `List the suppliers of one connected ERP integration, optionally by part of the name. ${ERP_PAGING}`,
+    inputSchema: schema(
+      { integrationId, q: { type: 'string', description: 'part of the supplier name' }, ...PAGING },
+      ['integrationId'],
+    ),
+    run: (a, ctx) =>
+      fetchSuppliers(ctx.config, ctx.now, required(a, 'integrationId'), {
+        search: str(a.q),
+        limit: str(a.limit),
+        cursor: str(a.cursor),
+        all: bool(a.all),
+      }),
+  },
+  {
+    name: 'list_bills',
+    description: `List the supplier invoices (type bill) and supplier credits (type credit) of one connected ERP integration, with gross, VAT, paidMinor (what the ERP says was paid) and status. ${ERP_PAGING} ${AMOUNTS}`,
+    inputSchema: schema(
+      {
+        integrationId,
+        status: { type: 'string', enum: ['open', 'partially_paid', 'paid', 'cancelled', 'closed'] },
+        issuedFrom: localDate('issued on or after, YYYY-MM-DD'),
+        issuedTo: localDate('issued on or before, YYYY-MM-DD'),
+        openOnly: { type: 'boolean', description: 'only bills still (partly) unpaid' },
+        ...PAGING,
+      },
+      ['integrationId'],
+    ),
+    run: (a, ctx) =>
+      fetchBills(ctx.config, ctx.now, required(a, 'integrationId'), {
+        status: str(a.status),
+        from: str(a.issuedFrom),
+        to: str(a.issuedTo),
+        openOnly: bool(a.openOnly),
+        limit: str(a.limit),
+        cursor: str(a.cursor),
+        all: bool(a.all),
+      }),
+  },
+  {
+    name: 'list_ledger_balances',
+    description: `List the general ledger of one connected ERP integration: one record per account and month (period YYYY-MM), in the company's currency, with the month's debitMinor and creditMinor and the closingMinor balance at its end (debit positive). account.kind is asset, liability, equity, income, expense or unknown. Profit and loss for a period: income = credits − debits of income accounts, expenses = debits − credits of expense accounts; leave unknown accounts out and say so. Some ERPs keep only profit-and-loss accounts here (Rivhit): with no asset, liability or equity account there is no balance sheet to give, so say so rather than show zeros. ${ERP_PAGING} ${AMOUNTS}`,
+    inputSchema: schema(
+      {
+        integrationId,
+        periodFrom: { type: 'string', description: 'first month, YYYY-MM' },
+        periodTo: { type: 'string', description: 'last month, YYYY-MM' },
+        kind: { type: 'string', enum: ['asset', 'liability', 'equity', 'income', 'expense', 'unknown'] },
+        accountCode: { type: 'string', description: 'one account code' },
+        ...PAGING,
+      },
+      ['integrationId'],
+    ),
+    run: (a, ctx) =>
+      fetchLedgerBalances(ctx.config, ctx.now, required(a, 'integrationId'), {
+        from: str(a.periodFrom),
+        to: str(a.periodTo),
+        kind: str(a.kind),
+        account: str(a.accountCode),
+        limit: str(a.limit),
+        cursor: str(a.cursor),
+        all: bool(a.all),
+      }),
+  },
+  {
+    name: 'list_orders',
+    description: `List the orders of one connected ERP integration: side sales (a customer's order: revenue committed, not invoiced yet) or purchase (an order to a supplier: spend committed), with gross and status. ${ERP_PAGING} ${AMOUNTS}`,
+    inputSchema: schema(
+      {
+        integrationId,
+        side: { type: 'string', enum: ['sales', 'purchase'] },
+        status: { type: 'string', enum: ['open', 'partially_fulfilled', 'fulfilled', 'cancelled', 'closed'] },
+        orderedFrom: localDate('ordered on or after, YYYY-MM-DD'),
+        orderedTo: localDate('ordered on or before, YYYY-MM-DD'),
+        ...PAGING,
+      },
+      ['integrationId'],
+    ),
+    run: (a, ctx) =>
+      fetchOrders(ctx.config, ctx.now, required(a, 'integrationId'), {
+        side: str(a.side),
+        status: str(a.status),
+        from: str(a.orderedFrom),
+        to: str(a.orderedTo),
+        limit: str(a.limit),
+        cursor: str(a.cursor),
+        all: bool(a.all),
+      }),
+  },
+  {
+    name: 'list_inventory',
+    description: `List the stock items of one connected ERP integration: quantity on hand in total and per warehouse, unit cost and value at cost (valueMinor; null when the ERP states no cost). Value is at cost, not sale price. ${ERP_PAGING} ${AMOUNTS}`,
+    inputSchema: schema(
+      {
+        integrationId,
+        q: { type: 'string', description: 'part of the item name or SKU' },
+        inStockOnly: { type: 'boolean', description: 'only items with stock on hand' },
+        ...PAGING,
+      },
+      ['integrationId'],
+    ),
+    run: (a, ctx) =>
+      fetchInventory(ctx.config, ctx.now, required(a, 'integrationId'), {
+        search: str(a.q),
+        inStockOnly: bool(a.inStockOnly),
+        limit: str(a.limit),
+        cursor: str(a.cursor),
+        all: bool(a.all),
+      }),
+  },
   {
     name: 'list_proposals',
     description:
@@ -325,7 +463,7 @@ export const INTEGRATION_TOOLS: ToolDef[] = [
   },
 ]
 
-/** Everything `financy mcp` serves: the published table plus the invoicing tools. */
+/** Everything `financy mcp` serves: the published table plus the business-system tools. */
 export const LOCAL_TOOLS: ToolDef[] = [...TOOLS, ...INTEGRATION_TOOLS]
 
 const LOCAL_BY_NAME = new Map(LOCAL_TOOLS.map((t) => [t.name, t]))

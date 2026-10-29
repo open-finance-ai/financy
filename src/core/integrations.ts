@@ -6,8 +6,8 @@ import { CliError } from '../errors.js'
 import { EXIT } from '../exit-codes.js'
 import type { ListArgs, ListEnvelope, GetEnvelope } from './read.js'
 
-// --- Business-system integrations: invoicing (Invoice4U, Morning, SUMIT, iCount) and card
-// clearing (Isracard Business). The single source of truth for paths + query
+// --- Business-system integrations: invoicing (Invoice4U, Morning, SUMIT, iCount), ERP
+// (Priority, Rivhit) and card clearing (Isracard Business). The single source of truth for paths + query
 // mapping, shared by the CLI commands (src/commands/integration-commands.ts) and
 // the local MCP server's tools. ---
 
@@ -221,6 +221,156 @@ export function fetchClearingSettlements<T>(
     now,
     `/${segment('integration id', integrationId)}/settlements`,
     { status: args.status, paymentFrom: args.from, paymentTo: args.to, limit: args.limit, cursor: args.cursor },
+    !!args.all,
+  )
+}
+
+// --- ERP integrations (category erp: Priority, Rivhit). Read only: beside their
+// documents and customers they hold suppliers, bills, the ledger, orders and
+// inventory. Each route is per integration and pages with a cursor. ---
+
+export interface PayablesArgs {
+  asOf?: string
+  detailed?: boolean
+  supplierLimit?: string
+}
+
+/** What the business owes its suppliers on one ERP integration: open bills aged by due date, per currency and per supplier. */
+export async function fetchPayables<T>(
+  config: Config,
+  now: Date,
+  integrationId: string,
+  args: PayablesArgs,
+): Promise<GetEnvelope<T>> {
+  const body = await get<T>(config, now, `/${segment('integration id', integrationId)}/payables`, {
+    asOf: args.asOf,
+    format: args.detailed ? 'detailed' : undefined,
+    supplierLimit: args.supplierLimit,
+  })
+  return { data: body }
+}
+
+export interface SupplierListArgs extends ListArgs {
+  search?: string
+}
+
+export function fetchSuppliers<T>(
+  config: Config,
+  now: Date,
+  integrationId: string,
+  args: SupplierListArgs,
+): Promise<ListEnvelope<T>> {
+  return cursorList<T>(
+    config,
+    now,
+    `/${segment('integration id', integrationId)}/suppliers`,
+    { q: args.search, limit: args.limit, cursor: args.cursor },
+    !!args.all,
+  )
+}
+
+export interface BillListArgs extends ListArgs {
+  status?: string
+  from?: string
+  to?: string
+  openOnly?: boolean
+}
+
+/** Supplier invoices (type bill) and supplier credits (type credit) of one ERP integration. */
+export function fetchBills<T>(config: Config, now: Date, integrationId: string, args: BillListArgs): Promise<ListEnvelope<T>> {
+  return cursorList<T>(
+    config,
+    now,
+    `/${segment('integration id', integrationId)}/bills`,
+    {
+      status: args.status,
+      issuedFrom: args.from,
+      issuedTo: args.to,
+      openOnly: args.openOnly ? 'true' : undefined,
+      limit: args.limit,
+      cursor: args.cursor,
+    },
+    !!args.all,
+  )
+}
+
+export interface LedgerListArgs extends ListArgs {
+  from?: string
+  to?: string
+  kind?: string
+  account?: string
+}
+
+/** The general ledger of one ERP integration: one record per account and month (period YYYY-MM). */
+export function fetchLedgerBalances<T>(
+  config: Config,
+  now: Date,
+  integrationId: string,
+  args: LedgerListArgs,
+): Promise<ListEnvelope<T>> {
+  return cursorList<T>(
+    config,
+    now,
+    `/${segment('integration id', integrationId)}/ledger`,
+    {
+      periodFrom: args.from,
+      periodTo: args.to,
+      kind: args.kind,
+      accountCode: args.account,
+      limit: args.limit,
+      cursor: args.cursor,
+    },
+    !!args.all,
+  )
+}
+
+export interface OrderListArgs extends ListArgs {
+  side?: string
+  status?: string
+  from?: string
+  to?: string
+}
+
+/** Sales orders (revenue committed) and purchase orders (spend committed) of one ERP integration. */
+export function fetchOrders<T>(config: Config, now: Date, integrationId: string, args: OrderListArgs): Promise<ListEnvelope<T>> {
+  return cursorList<T>(
+    config,
+    now,
+    `/${segment('integration id', integrationId)}/orders`,
+    {
+      side: args.side,
+      status: args.status,
+      orderedFrom: args.from,
+      orderedTo: args.to,
+      limit: args.limit,
+      cursor: args.cursor,
+    },
+    !!args.all,
+  )
+}
+
+export interface InventoryListArgs extends ListArgs {
+  search?: string
+  inStockOnly?: boolean
+}
+
+/** Stock items of one ERP integration: quantity on hand and value at cost. */
+export function fetchInventory<T>(
+  config: Config,
+  now: Date,
+  integrationId: string,
+  args: InventoryListArgs,
+): Promise<ListEnvelope<T>> {
+  return cursorList<T>(
+    config,
+    now,
+    `/${segment('integration id', integrationId)}/inventory`,
+    {
+      q: args.search,
+      inStockOnly: args.inStockOnly ? 'true' : undefined,
+      limit: args.limit,
+      cursor: args.cursor,
+    },
     !!args.all,
   )
 }

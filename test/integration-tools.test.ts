@@ -16,6 +16,13 @@ import {
   upgradeRequired,
   CLEARING_ID,
   settlementSettled,
+  ERP_ID,
+  billOlder,
+  ledgerIncome,
+  salesOrder,
+  inventoryItem,
+  supplier,
+  payables,
 } from './fixtures/integrations.js'
 
 let teardown: (() => Promise<void>) | undefined
@@ -55,6 +62,12 @@ describe('invoicing tool registry', () => {
         'list_invoicing_customers',
         'get_invoicing_customer',
         'list_clearing_settlements',
+        'get_payables',
+        'list_suppliers',
+        'list_bills',
+        'list_ledger_balances',
+        'list_orders',
+        'list_inventory',
         'list_proposals',
         'get_proposal',
         ...DRAFT_TOOLS,
@@ -91,7 +104,7 @@ describe('invoicing tool registry', () => {
 
   it('list_integrations names every supported invoicing system and the clearing one', () => {
     const tool = INTEGRATION_TOOLS.find((t) => t.name === 'list_integrations')!
-    for (const system of ['Invoice4U', 'Morning', 'SUMIT', 'iCount', 'Isracard Business']) {
+    for (const system of ['Invoice4U', 'Morning', 'SUMIT', 'iCount', 'Priority', 'Rivhit', 'Isracard Business']) {
       expect(tool.description).toContain(system)
     }
   })
@@ -251,6 +264,85 @@ describe('invoicing read tools', () => {
     expect(result.data[0]).not.toHaveProperty('providerId')
     expect(result.data[0]).toMatchObject({ id: settlementSettled.id, payoutAccount: '1234', amounts: settlementSettled.amounts })
     expect(result.freshness).toEqual(freshness)
+  })
+
+  it('get_payables maps asOf, format and supplierLimit onto the per-integration route', async () => {
+    const pool = setup()
+    let seen = ''
+    pool
+      .intercept({ path: (p) => p.startsWith(`${BASE}/${ERP_ID}/payables`), method: 'GET' })
+      .reply((opts) => {
+        seen = opts.path
+        return { statusCode: 200, data: JSON.stringify(payables) }
+      })
+
+    const result = (await callLocalTool(
+      'get_payables',
+      { integrationId: ERP_ID, asOf: '2026-10-29', format: 'detailed', supplierLimit: 5 },
+      { env: env() },
+    )) as { data: unknown }
+
+    const q = new URLSearchParams(seen.split('?')[1])
+    expect(q.get('asOf')).toBe('2026-10-29')
+    expect(q.get('format')).toBe('detailed')
+    expect(q.get('supplierLimit')).toBe('5')
+    expect(result.data).toEqual(payables)
+  })
+
+  const erpLists: Array<[string, string, Record<string, unknown>, Record<string, string>, unknown]> = [
+    ['list_suppliers', 'suppliers', { q: 'Test', limit: 10 }, { q: 'Test', limit: '10' }, supplier],
+    [
+      'list_bills',
+      'bills',
+      { status: 'open', issuedFrom: '2026-09-01', issuedTo: '2026-10-31', openOnly: true },
+      { status: 'open', issuedFrom: '2026-09-01', issuedTo: '2026-10-31', openOnly: 'true' },
+      billOlder,
+    ],
+    [
+      'list_ledger_balances',
+      'ledger',
+      { periodFrom: '2026-01', periodTo: '2026-09', kind: 'income', accountCode: '4000' },
+      { periodFrom: '2026-01', periodTo: '2026-09', kind: 'income', accountCode: '4000' },
+      ledgerIncome,
+    ],
+    [
+      'list_orders',
+      'orders',
+      { side: 'purchase', status: 'open', orderedFrom: '2026-10-01', orderedTo: '2026-10-31' },
+      { side: 'purchase', status: 'open', orderedFrom: '2026-10-01', orderedTo: '2026-10-31' },
+      salesOrder,
+    ],
+    ['list_inventory', 'inventory', { q: 'P-1', inStockOnly: true }, { q: 'P-1', inStockOnly: 'true' }, inventoryItem],
+  ]
+
+  for (const [tool, route, args, expected, item] of erpLists) {
+    it(`${tool} maps its arguments onto /{integrationId}/${route}`, async () => {
+      const pool = setup()
+      let seen = ''
+      pool
+        .intercept({ path: (p) => p.startsWith(`${BASE}/${ERP_ID}/${route}`), method: 'GET' })
+        .reply((opts) => {
+          seen = opts.path
+          return { statusCode: 200, data: JSON.stringify({ items: [item], nextCursor: null, freshness }) }
+        })
+
+      const result = (await callLocalTool(tool, { integrationId: ERP_ID, ...args }, { env: env() })) as {
+        data: unknown[]
+        freshness: unknown
+      }
+
+      const q = new URLSearchParams(seen.split('?')[1])
+      for (const [key, value] of Object.entries(expected)) expect(q.get(key)).toBe(value)
+      expect(result.data).toEqual([item])
+      expect(result.freshness).toEqual(freshness)
+    })
+  }
+
+  it('every ERP tool requires integrationId', async () => {
+    for (const tool of ['get_payables', 'list_suppliers', 'list_bills', 'list_ledger_balances', 'list_orders', 'list_inventory']) {
+      const def = INTEGRATION_TOOLS.find((t) => t.name === tool)!
+      expect(def.inputSchema.required).toContain('integrationId')
+    }
   })
 
   it('get_proposal returns the draft with its approval link', async () => {
