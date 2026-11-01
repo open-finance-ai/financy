@@ -175,7 +175,7 @@ export function fetchTransaction<T>(config: Config, now: Date, key: string) {
   )
 }
 
-/** The static category taxonomy, returned verbatim (no list envelope). */
+/** The category taxonomy and the org's custom categories, returned verbatim (no list envelope). */
 export function fetchCategories(config: Config, now: Date): Promise<unknown> {
   return authorized(config, now, (token) =>
     getById(config, token, '/data/transaction-categories'),
