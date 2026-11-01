@@ -77,7 +77,7 @@ financy status                       Are my connections fresh? one-line-per-bank
 financy connections list|get <id>    Bank/card connections and their fetch state
 financy accounts list|get <id>       Accounts with balances (securities embedded)
 financy transactions list|get <id>   Transactions with --from/--to/--account/--type filters
-financy categories                   The category taxonomy (English + Hebrew)
+financy categories                   The category taxonomy (English + Hebrew) and your own categories
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
 financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT, iCount; clearing: Isracard Business)

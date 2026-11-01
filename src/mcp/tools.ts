@@ -148,7 +148,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'list_categories',
-    description: 'The static transaction-category taxonomy (English + Hebrew). Use to interpret transaction category fields. No arguments.',
+    description: 'The transaction-category taxonomy (English + Hebrew), plus the organization\'s own categories in customCategories (id, name, and the built-in parent category it belongs under). A transaction whose changedCategory.main starts with CUSTOM_ is in one of them: call it by its name. Use to interpret transaction category fields. No arguments.',
     inputSchema: NO_ARGS,
     run: async (_a, ctx) => ({ data: await fetchCategories(ctx.config, ctx.now) }),
   },
