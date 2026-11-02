@@ -153,9 +153,11 @@ takes `from`/`to`) to read it, and `list_providers` to resolve provider ids.
 
 - **Claude Code**, with the local server: `claude mcp add financy -- npx financy mcp`
   (see [MCP server](#mcp-server-for-ai-agents)).
-- **Claude or ChatGPT**, with no CLI: add the hosted Financy connector,
-  `https://mcp.open-finance.ai/mcp`, as a custom connector and sign in with your
-  Financy account.
+- **Claude or ChatGPT**, with no CLI: in Claude, find Financy in the
+  [Connectors Directory](https://claude.ai/directory/connectors/financy), where it
+  is listed as a Community connector. In ChatGPT or another MCP client, add the
+  hosted connector, `https://mcp.open-finance.ai/mcp`, by URL. Either way you sign
+  in with your Financy account.
 
 Then ask in plain language. The assistant pulls bit, bank, and card transactions
 and combines them. Questions like "who hasn't paid yet" work by comparing this
