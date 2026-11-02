@@ -61,10 +61,16 @@ export interface Column<T> {
 
 const GAP = '  '
 
+// Control and format characters. Cell text comes from the API, some of it
+// written by other people (an organization's own category names, merchant
+// text): an escape sequence there could drive the user's terminal (links,
+// clipboard writes, clearing the screen), and a bidi override reorder the row.
+const CONTROL_OR_FORMAT = /[\p{Cc}\p{Cf}]/gu
+
 /** Coerce a possibly-missing cell value to a safe display string (never throws). */
 function cell<T>(col: Column<T>, row: T): string {
   const v = col.value(row)
-  return v == null ? '' : String(v)
+  return v == null ? '' : String(v).replace(CONTROL_OR_FORMAT, '')
 }
 
 /** Pad `str` on the right with spaces to `width` visible columns. */

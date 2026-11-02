@@ -28,6 +28,10 @@ All notable changes to `financy` are documented here. The format follows
   (`businessTaxId`) and `maskedTail` are stripped from every tool result, and a person's
   login in `categorizedBy` or `classifiedBy` reads as `USER`. The CLI's own table and
   `--json` output are unchanged.
+- Table output prints no control or formatting characters from the data (terminal
+  escape sequences, bidi overrides, zero-width marks), so text other people wrote, such
+  as an organization's category names, cannot drive your terminal or reorder a row.
+  `--json` is unchanged.
 
 ## [0.4.3] — 2026-10-19
 
