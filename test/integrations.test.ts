@@ -22,6 +22,16 @@ import {
   clearingIntegration,
   settlementSettled,
   settlementExpected,
+  ERP_ID,
+  erpIntegration,
+  supplier,
+  billOlder,
+  billNewer,
+  ledgerIncome,
+  ledgerLaterMonth,
+  salesOrder,
+  inventoryItem,
+  payables,
 } from './fixtures/integrations.js'
 
 const ENV = {
@@ -584,6 +594,167 @@ describe('financy integrations with a clearing integration', () => {
   })
 })
 
+describe('financy ERP reads (Priority, Rivhit)', () => {
+  it('payables renders totals and the per-supplier table, with its options in the query', async () => {
+    const pool = setup()
+    const seen = capture(pool, 'GET', `${BASE}/${ERP_ID}/payables`, payables)
+
+    const { code, stdout } = await runCli(
+      ['payables', ERP_ID, '--as-of', '2026-10-29', '--detailed', '--supplier-limit', '1'],
+      { env: ENV },
+    )
+
+    expect(code).toBe(0)
+    const q = query(seen[0]!.path)
+    expect(q.get('asOf')).toBe('2026-10-29')
+    expect(q.get('format')).toBe('detailed')
+    expect(q.get('supplierLimit')).toBe('1')
+    expect(stdout).toContain('Payables as of 2026-10-29')
+    expect(stdout).toContain('₪1,180.00 open, ₪1,180.00 overdue across 1 bills')
+    expect(stdout).toContain('Test Supplier Ltd')
+    expect(stdout).toContain('Showing 1 of 3 suppliers')
+  })
+
+  it('payables emits the API body under {data} with --json', async () => {
+    const pool = setup()
+    capture(pool, 'GET', `${BASE}/${ERP_ID}/payables`, payables)
+
+    const { stdout } = await runCli(['payables', ERP_ID, '--json'], { env: ENV })
+
+    expect(JSON.parse(stdout)).toEqual({ data: payables })
+  })
+
+  it('suppliers list sends --search as q', async () => {
+    const pool = setup()
+    const seen = capture(pool, 'GET', `${BASE}/${ERP_ID}/suppliers`, { items: [supplier], nextCursor: null, freshness })
+
+    const { code, stdout } = await runCli(['suppliers', 'list', ERP_ID, '--search', 'Test'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(query(seen[0]!.path).get('q')).toBe('Test')
+    expect(stdout).toContain('Test Supplier Ltd')
+    expect(stdout).toContain(supplier.id)
+  })
+
+  it('bills list maps its filters, renders shekels and sorts newest first, but keeps --json in API order', async () => {
+    const pool = setup()
+    const seen: string[] = []
+    pool
+      .intercept({ path: (p) => p.startsWith(`${BASE}/${ERP_ID}/bills`), method: 'GET' })
+      .reply((opts) => {
+        seen.push(opts.path)
+        return { statusCode: 200, data: JSON.stringify({ items: [billOlder, billNewer], nextCursor: null, freshness }) }
+      })
+      .times(2)
+
+    const table = await runCli(
+      ['bills', 'list', ERP_ID, '--status', 'open', '--from', '2026-09-01', '--to', '2026-10-31', '--open-only'],
+      { env: ENV },
+    )
+    const json = await runCli(['bills', 'list', ERP_ID, '--json'], { env: ENV })
+
+    const q = query(seen[0]!)
+    expect(q.get('status')).toBe('open')
+    expect(q.get('issuedFrom')).toBe('2026-09-01')
+    expect(q.get('issuedTo')).toBe('2026-10-31')
+    expect(q.get('openOnly')).toBe('true')
+    expect(table.stdout).toContain('₪1,180.00')
+    expect(table.stdout.indexOf(billNewer.id)).toBeLessThan(table.stdout.indexOf(billOlder.id))
+    expect(JSON.parse(json.stdout).data.map((b: { id: string }) => b.id)).toEqual([billOlder.id, billNewer.id])
+  })
+
+  it('ledger list maps months, kind and account, and shows the latest month first', async () => {
+    const pool = setup()
+    const seen = capture(pool, 'GET', `${BASE}/${ERP_ID}/ledger`, {
+      items: [ledgerIncome, ledgerLaterMonth],
+      nextCursor: null,
+      freshness,
+    })
+
+    const { code, stdout } = await runCli(
+      ['ledger', 'list', ERP_ID, '--from', '2026-01', '--to', '2026-10', '--kind', 'income', '--account', '4000'],
+      { env: ENV },
+    )
+
+    expect(code).toBe(0)
+    const q = query(seen[0]!.path)
+    expect(q.get('periodFrom')).toBe('2026-01')
+    expect(q.get('periodTo')).toBe('2026-10')
+    expect(q.get('kind')).toBe('income')
+    expect(q.get('accountCode')).toBe('4000')
+    expect(stdout.indexOf('2026-10')).toBeLessThan(stdout.indexOf('2026-09'))
+    expect(stdout).toContain('-₪10,000.00')
+  })
+
+  it('orders list maps side, status and order dates', async () => {
+    const pool = setup()
+    const seen = capture(pool, 'GET', `${BASE}/${ERP_ID}/orders`, { items: [salesOrder], nextCursor: null, freshness })
+
+    const { code, stdout } = await runCli(
+      ['orders', 'list', ERP_ID, '--side', 'sales', '--status', 'open', '--from', '2026-10-01', '--to', '2026-10-31'],
+      { env: ENV },
+    )
+
+    expect(code).toBe(0)
+    const q = query(seen[0]!.path)
+    expect(q.get('side')).toBe('sales')
+    expect(q.get('status')).toBe('open')
+    expect(q.get('orderedFrom')).toBe('2026-10-01')
+    expect(q.get('orderedTo')).toBe('2026-10-31')
+    expect(stdout).toContain('₪2,340.00')
+    expect(stdout).toContain('SO-7')
+  })
+
+  it('inventory list maps --search and --in-stock-only, and --all follows nextCursor', async () => {
+    const pool = setup()
+    const seen: string[] = []
+    pool
+      .intercept({ path: (p) => p.startsWith(`${BASE}/${ERP_ID}/inventory`), method: 'GET' })
+      .reply((opts) => {
+        seen.push(opts.path)
+        const first = seen.length === 1
+        return {
+          statusCode: 200,
+          data: JSON.stringify({ items: [inventoryItem], nextCursor: first ? 'c2' : null, freshness }),
+        }
+      })
+      .times(2)
+
+    const { code, stdout } = await runCli(
+      ['inventory', 'list', ERP_ID, '--search', 'P-1', '--in-stock-only', '--all', '--json'],
+      { env: ENV },
+    )
+
+    expect(code).toBe(0)
+    const q = query(seen[0]!)
+    expect(q.get('q')).toBe('P-1')
+    expect(q.get('inStockOnly')).toBe('true')
+    expect(query(seen[1]!).get('cursor')).toBe('c2')
+    const out = JSON.parse(stdout)
+    expect(out.count).toBe(2)
+    expect(out.nextPage).toBeNull()
+  })
+
+  it('refuses an id that is not id-shaped before calling the API', async () => {
+    setup()
+    for (const command of [['payables'], ['suppliers', 'list'], ['bills', 'list'], ['ledger', 'list'], ['orders', 'list'], ['inventory', 'list']]) {
+      const { code } = await runCli([...command, '../proposals'], { env: ENV })
+      expect(code).toBe(2)
+    }
+  })
+
+  it('integrations list shows the erp category', async () => {
+    const pool = setup()
+    capture(pool, 'GET', `${BASE}/`, { items: [integration, erpIntegration] })
+
+    const { code, stdout } = await runCli(['integrations', 'list'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(stdout).toContain('erp')
+    expect(stdout).toContain('Priority')
+  })
+})
+
 describe('financy proposals', () => {
   it('lists drafts with filters mapped to the API query', async () => {
     const pool = setup()
@@ -721,12 +892,25 @@ describe('financy proposals', () => {
   })
 })
 
-describe('financy help lists the invoicing commands', () => {
-  it('shows integrations, receivables, documents, customers and proposals', async () => {
+describe('financy help lists the business-system commands', () => {
+  it('shows the invoicing, clearing and ERP commands', async () => {
     const { code, stdout } = await runCli(['help'])
 
     expect(code).toBe(0)
-    for (const command of ['integrations', 'receivables', 'documents', 'customers', 'proposals']) {
+    for (const command of [
+      'integrations',
+      'receivables',
+      'documents',
+      'customers',
+      'settlements',
+      'payables',
+      'suppliers',
+      'bills',
+      'ledger',
+      'orders',
+      'inventory',
+      'proposals',
+    ]) {
       expect(stdout).toContain(command)
     }
   })

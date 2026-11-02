@@ -145,13 +145,15 @@ cost.
 
 ## Business systems (invoicing and card clearing)
 
-The invoicing commands need CLI **0.4.0** or later, and `financy settlements` needs
-**0.4.2** (`financy --version`; `financy update` if older).
+The invoicing commands need CLI **0.4.0** or later, `financy settlements` needs
+**0.4.2**, and the ERP commands (`payables`, `suppliers`, `bills`, `ledger`,
+`orders`, `inventory`) need **0.4.4** (`financy --version`; `financy update` if older).
 
 Besides bank and card data, the same credentials read a connected invoicing
-system — Invoice4U, Morning, SUMIT or iCount — and a card-clearing integration
-(Isracard Business). If the user mentions invoices, receipts, customers, "who owes
-me" or card payouts, check what is connected:
+system — Invoice4U, Morning, SUMIT or iCount — an ERP (Priority or Rivhit, Pro and
+above, read only, beta) and a card-clearing integration (Isracard Business). If the
+user mentions invoices, receipts, customers, "who owes me", suppliers, what they owe,
+the ledger, orders, stock or card payouts, check what is connected:
 
 ```bash
 financy integrations list --json
@@ -159,8 +161,11 @@ financy integrations list --json
 
 - An empty list means nothing is connected yet. The user connects a system in the
   Financy app, under **Connections → Business systems**; the CLI cannot connect it.
-- Each integration has a `category`: `invoicing` (documents, customers, receivables)
-  or `clearing` (card payouts only — `financy settlements list <integrationId>`).
+- Each integration has a `category`: `invoicing` (documents, customers, receivables),
+  `erp` (documents and customers, plus `financy payables <integrationId>` and
+  `suppliers|bills|ledger|orders|inventory list <integrationId>`; read only, never
+  drafts) or `clearing` (card payouts only — `financy settlements list <integrationId>`).
+  Payables are what the business owes; never net them against receivables.
   Never add `expected` and `settled` payouts together, and never add settled payouts
   on top of the bank balance: they are already in it.
 - Exit `4` with `"code":"UPGRADE_REQUIRED"` means invoicing needs a paid plan
@@ -174,7 +179,7 @@ Once connected: `financy receivables` (who owes what), `financy documents list
 draft.json` only creates a **draft**: nothing is issued until the user approves it
 in Financy at the printed approval link. Never describe a draft as an issued
 invoice, and never try to approve it yourself — the CLI cannot. Drafts work with
-Invoice4U and Morning; SUMIT and iCount are read-only.
+all four invoicing systems (Invoice4U, Morning, SUMIT, iCount); an ERP is read only.
 
 ## Handling exit 4
 
@@ -227,8 +232,9 @@ claude mcp add financy -- npx financy mcp
 ```
 
 The server resolves credentials exactly as the CLI does. It also serves the
-invoicing and clearing tools (`list_integrations`, `get_receivables`,
-`list_invoicing_documents`, `list_clearing_settlements`, `draft_invoice`, …); a `draft_*` tool creates a draft the user must approve in
+invoicing, ERP and clearing tools (`list_integrations`, `get_receivables`,
+`list_invoicing_documents`, `get_payables`, `list_ledger_balances`,
+`list_clearing_settlements`, `draft_invoice`, …); a `draft_*` tool creates a draft the user must approve in
 Financy before anything is issued. Until setup is
 complete, every tool returns a structured `NOT_CONFIGURED` error — which is your
 signal to run this skill.

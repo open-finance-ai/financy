@@ -145,3 +145,113 @@ export const settlementExpected = {
   paymentDate: '2026-10-22',
   amounts: { grossMinor: 980000, commissionMinor: 9800, vatMinor: 1666, discountMinor: 0, chargingFeeMinor: 0, advanceRepaymentFeeMinor: 0, netMinor: 968534 },
 }
+
+export const ERP_ID = 'intg_01J9ZKAE1R2P3P4R5I6O7R8I9T'
+
+/** An ERP integration (Priority): documents and customers, plus suppliers, bills, ledger, orders and inventory. */
+export const erpIntegration = {
+  id: ERP_ID,
+  connectorId: 'priority',
+  connectorName: 'Priority',
+  category: 'erp',
+  label: 'Priority',
+  status: 'active',
+  auth: { state: 'active', reason: null, attention: null },
+  sync: { documents: { state: 'idle', stale: false, lastSuccessAt: '2026-10-28T06:00:00Z' } },
+  externalAiApps: 'read',
+}
+
+export const supplier = {
+  recordType: 'supplier',
+  id: 'isup_01J9ZKB1S2U3P4P5L6I7E8R9AA',
+  name: 'Test Supplier Ltd',
+  businessTaxId: '500000000',
+  active: true,
+}
+
+/** Two bills from the same synthetic supplier, issued on different days. */
+export const billOlder = {
+  recordType: 'bill',
+  id: 'ibil_01J9ZKC1B2I3L4L5O6L7D8E9RA',
+  type: 'bill',
+  number: 'SI-100',
+  issueDate: '2026-09-15',
+  dueDate: '2026-10-15',
+  supplier: { id: supplier.id, providerId: null, name: 'Test Supplier Ltd' },
+  currency: 'ILS',
+  amounts: { grossMinor: 118000, netMinor: 100000, vatMinor: 18000, grossIlsMinor: 118000, paidMinor: 0, withholdingMinor: null },
+  status: 'open',
+}
+
+export const billNewer = {
+  ...billOlder,
+  id: 'ibil_01J9ZKC2N2E3W4E5R6B7I8L9LA',
+  number: 'SI-101',
+  issueDate: '2026-10-01',
+  dueDate: '2026-10-31',
+  amounts: { ...billOlder.amounts, grossMinor: 59000, netMinor: 50000, vatMinor: 9000, grossIlsMinor: 59000, paidMinor: 59000 },
+  status: 'paid',
+}
+
+export const ledgerIncome = {
+  recordType: 'ledger_balance',
+  id: 'ilgr_01J9ZKD1L2E3D4G5E6R7I8N9CA',
+  account: { code: '4000', name: 'Sales', kind: 'income', group: { code: null, name: null } },
+  period: '2026-09',
+  currency: 'ILS',
+  debitMinor: 0,
+  creditMinor: 1000000,
+  closingMinor: -1000000,
+}
+
+export const ledgerLaterMonth = { ...ledgerIncome, id: 'ilgr_01J9ZKD2L2A3T4E5R6M7O8N9TA', period: '2026-10' }
+
+export const salesOrder = {
+  recordType: 'order',
+  id: 'iord_01J9ZKE1O2R3D4E5R6S7A8L9EA',
+  side: 'sales',
+  number: 'SO-7',
+  orderDate: '2026-10-20',
+  dueDate: '2026-11-20',
+  counterparty: { id: CUSTOMER_ID, providerId: null, name: 'Test Customer' },
+  currency: 'ILS',
+  amounts: { grossMinor: 234000, netMinor: 198305, vatMinor: 35695 },
+  status: 'open',
+}
+
+export const inventoryItem = {
+  recordType: 'inventory_item',
+  id: 'iinv_01J9ZKF1I2N3V4E5N6T7O8R9YA',
+  sku: 'P-1',
+  name: 'Test Item',
+  unit: 'unit',
+  quantityOnHand: 4,
+  valueMinor: 8000,
+  unitCostMinor: 2000,
+  currency: 'ILS',
+  warehouses: [{ code: 'MAIN', name: null, quantity: 4 }],
+  active: true,
+}
+
+export const payables = {
+  asOf: '2026-10-29',
+  freshness: { dataAsOf: '2026-10-28T06:00:00Z', stale: false },
+  byCurrency: [
+    {
+      currency: 'ILS',
+      totals: { openMinor: 118000, overdueMinor: 118000, billCount: 1, buckets: { current: 0, '1_30': 118000, '31_60': 0, '61_90': 0, '90_plus': 0 } },
+    },
+  ],
+  suppliers: [
+    {
+      supplier: { id: supplier.id, name: 'Test Supplier Ltd' },
+      currency: 'ILS',
+      openMinor: 118000,
+      overdueMinor: 118000,
+      oldestDueDate: '2026-10-15',
+      maxDaysPastDue: 14,
+      billCount: 1,
+    },
+  ],
+  truncated: { suppliersShown: 1, suppliersTotal: 3 },
+}

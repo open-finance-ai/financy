@@ -6,6 +6,39 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.4] — Unreleased
+
+### Added
+
+- **ERP reads (Priority, Rivhit).** An ERP integration (category `erp`, Pro and up,
+  read only, beta streams) can now be read beyond its documents and customers:
+  - `financy payables <integrationId>`: what the business owes its suppliers, open
+    bills aged by due date per currency and per supplier (`--as-of`, `--detailed`,
+    `--supplier-limit`).
+  - `financy suppliers list <integrationId>` (`--search`).
+  - `financy bills list <integrationId>`: supplier invoices and credits (`--status`,
+    `--from`/`--to` on the issue date, `--open-only`).
+  - `financy ledger list <integrationId>`: general ledger balances per account and
+    month (`--from`/`--to` as `YYYY-MM`, `--kind`, `--account`).
+  - `financy orders list <integrationId>`: sales and purchase orders (`--side`,
+    `--status`, `--from`/`--to` on the order date).
+  - `financy inventory list <integrationId>`: stock on hand and value at cost
+    (`--search`, `--in-stock-only`).
+  Lists page with `--limit`/`--cursor`/`--all`; tables show shekels, `--json` keeps
+  minor units and the API order.
+- The local MCP server (`financy mcp`) serves **`get_payables`**, **`list_suppliers`**,
+  **`list_bills`**, **`list_ledger_balances`**, **`list_orders`** and
+  **`list_inventory`**, under the same names, arguments and descriptions as the hosted
+  connector.
+
+### Changed
+
+- Drafts work with all four invoicing systems: SUMIT and iCount now draft like
+  Invoice4U and Morning. README and the `financy-setup` skill no longer call them
+  read-only.
+- `financy integrations` help, `list_integrations`, README and the `financy-setup`
+  skill name the `erp` category and Priority and Rivhit.
+
 ## [0.4.3] — 2026-10-19
 
 ### Changed
