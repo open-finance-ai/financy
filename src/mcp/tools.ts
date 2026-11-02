@@ -69,7 +69,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'list_connections',
     description:
-      'List the user\'s bank/card connections and their fetch state (status, data-through date, consent expiry, per-type counts). Start here to see what is connected. Supports limit/cursor paging and all.',
+      'List the user\'s connections — banks, credit cards and digital wallets (bit, provider `bit`) — and their fetch state (status, data-through date, consent expiry, per-type counts). Start here to see what is connected. Supports limit/cursor paging and all.',
     inputSchema: { type: 'object', properties: { ...PAGING } },
     run: (a, ctx) => fetchConnections(ctx.config, ctx.now, listArgs(a)),
   },
@@ -82,7 +82,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'list_accounts',
     description:
-      'List accounts with balances (securities embedded). Filter by type (CHECKING|CARD|LOAN|SAVINGS|SECURITY) or connection. Supports limit/cursor/all.',
+      'List accounts with balances (securities embedded). Filter by type (CHECKING|CARD|LOAN|SAVINGS|SECURITY) or connection. A bit wallet has no type value of its own: pass its connection id (provider `bit` in list_connections) or omit type. Supports limit/cursor/all.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -107,7 +107,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: 'list_transactions',
     description:
-      'List transactions, most useful with filters: from/to (YYYY-MM-DD), account, connection, type (BANK|CARD). Page with limit/cursor or fetch everything with all. Hebrew merchant names are returned as-is. To then read one transaction, pass its `SK` (not its `id`) to get_transaction.',
+      'List transactions, most useful with filters: from/to (YYYY-MM-DD), account, connection, type (BANK|CARD). For a bit wallet, filter by its connection (provider `bit`), not type. When totalling across bit + bank + card, exclude internal transfers — bit top-ups from a credit card (FROM_CREDIT_CARD) and bit withdrawals to a bank ("Withdrawal to Bank Account") — or the same money counts twice. Page with limit/cursor or fetch everything with all. Hebrew merchant names are returned as-is. To then read one transaction, pass its `SK` (not its `id`) to get_transaction.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -154,7 +154,7 @@ export const TOOLS: ToolDef[] = [
   },
   {
     name: 'list_providers',
-    description: 'Reference data: the list of banks/providers, to resolve providerId values. No arguments.',
+    description: 'Reference data: the list of providers — banks, card companies and digital wallets (e.g. bit) — to resolve providerId values. No arguments.',
     inputSchema: NO_ARGS,
     run: (_a, ctx) => fetchProviders(ctx.config, ctx.now),
   },
