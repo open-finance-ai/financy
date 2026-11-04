@@ -182,3 +182,90 @@ describe('financy transactions get', () => {
     expect(JSON.parse(stderr).error.code).toBe('TRANSACTION_NOT_FOUND')
   })
 })
+
+describe('financy transactions list CATEGORY column', () => {
+  const CATEGORIES_PATH = '/v2/data/transaction-categories'
+  const CUSTOM = 'CUSTOM_01K8Z3Q4R5S6T7V8W9X0Y1Z2A3'
+  const recategorized = {
+    id: 'txn_1',
+    category: { main: 'SHOPPING', sub: 'SHOPPING_OTHER' },
+    changedCategory: { main: 'FOOD', sub: 'GROCERIES', categorizedBy: 'person@example.com' },
+  }
+  const custom = {
+    id: 'txn_2',
+    category: { main: 'SHOPPING', sub: 'SHOPPING_OTHER' },
+    changedCategory: { main: CUSTOM, categorizedBy: 'person@example.com' },
+  }
+  const systemOnly = { id: 'txn_3', category: { main: 'TRANSPORT', sub: 'FUEL' } }
+
+  function setup(items: unknown[]) {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+    pool
+      .intercept({ path: (p) => p.startsWith(TXN_PATH), method: 'GET' })
+      .reply(200, { items, nextPage: null, count: items.length })
+    return pool
+  }
+
+  it('shows the category a person chose, falling back to the system one, without fetching categories', async () => {
+    const pool = setup([recategorized, systemOnly])
+    let categoryCalls = 0
+    pool.intercept({ path: CATEGORIES_PATH, method: 'GET' }).reply(() => {
+      categoryCalls++
+      return { statusCode: 200, data: JSON.stringify({ customCategories: [] }) }
+    })
+
+    const { code, stdout } = await runCli(['transactions', 'list'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(stdout).toContain('FOOD/GROCERIES')
+    expect(stdout).not.toContain('SHOPPING/SHOPPING_OTHER')
+    expect(stdout).toContain('TRANSPORT/FUEL')
+    expect(categoryCalls).toBe(0)
+  })
+
+  it('names an organization category, fetching the categories once per page', async () => {
+    const pool = setup([custom, { ...custom, id: 'txn_4' }])
+    let categoryCalls = 0
+    pool.intercept({ path: CATEGORIES_PATH, method: 'GET' }).reply(() => {
+      categoryCalls++
+      return {
+        statusCode: 200,
+        data: JSON.stringify({ customCategories: [{ id: CUSTOM, name: 'ציוד משרדי', parent: 'SHOPPING' }] }),
+      }
+    })
+
+    const { code, stdout } = await runCli(['transactions', 'list'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(stdout).toContain('ציוד משרדי/—')
+    expect(stdout).not.toContain(CUSTOM)
+    expect(categoryCalls).toBe(1)
+  })
+
+  it('prints the raw id when the categories fetch fails', async () => {
+    const pool = setup([custom])
+    pool.intercept({ path: CATEGORIES_PATH, method: 'GET' }).reply(500, { message: 'boom' })
+
+    const { code, stdout } = await runCli(['transactions', 'list'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(stdout).toContain(`${CUSTOM}/—`)
+  })
+
+  it('keeps --json the raw API response, without fetching categories', async () => {
+    const pool = setup([custom])
+    let categoryCalls = 0
+    pool.intercept({ path: CATEGORIES_PATH, method: 'GET' }).reply(() => {
+      categoryCalls++
+      return { statusCode: 200, data: JSON.stringify({ customCategories: [] }) }
+    })
+
+    const { code, stdout } = await runCli(['transactions', 'list', '--json'], { env: ENV })
+
+    expect(code).toBe(0)
+    expect(JSON.parse(stdout).data).toEqual([custom])
+    expect(categoryCalls).toBe(0)
+  })
+})

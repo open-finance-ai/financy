@@ -65,6 +65,11 @@ interface Account {
   balances?: Balance[]
 }
 
+interface TransactionCategory {
+  main?: string
+  sub?: string
+}
+
 interface Transaction {
   id: string
   /** The composite sort key — what `transactions get` is keyed by, unlike `id`. */
@@ -73,7 +78,10 @@ interface Transaction {
   merchantName?: string
   description?: { description?: string; fixedText?: string }
   amount?: { chargedAmount?: Money; originalAmount?: Money }
-  category?: { main?: string; sub?: string }
+  /** The system's original category. */
+  category?: TransactionCategory
+  /** The category to show: a person's choice when they recategorized, else the system's. */
+  changedCategory?: TransactionCategory & { categorizedBy?: string; categorizedAt?: string }
   date?: { transactionDate?: string }
 }
 
@@ -111,6 +119,39 @@ function txnAmount(t: Transaction): number | string | undefined {
   return t.amount?.originalAmount?.amount
 }
 
+/** The category a transaction shows: changedCategory, else the system's original. */
+function shownCategory(t: Transaction): TransactionCategory | undefined {
+  return t.changedCategory?.main ? t.changedCategory : t.category
+}
+
+/** An organization's own category id (`CUSTOM_<ulid>`), named in GET /data/transaction-categories. */
+const isCustomCategory = (main: unknown): main is string =>
+  typeof main === 'string' && main.startsWith('CUSTOM_')
+
+/**
+ * The organization's category names by id, fetched only when a page shows one of
+ * its categories. A failed fetch leaves the map empty, so the table prints the raw id.
+ */
+async function customCategoryNames(
+  config: Config,
+  now: Date,
+  rows: Transaction[],
+): Promise<ReadonlyMap<string, string>> {
+  if (!rows.some((t) => isCustomCategory(shownCategory(t)?.main))) return new Map()
+  try {
+    const data = (await fetchCategories(config, now)) as { customCategories?: unknown } | null
+    const custom = Array.isArray(data?.customCategories) ? (data.customCategories as unknown[]) : []
+    return new Map(
+      custom.flatMap((c) => {
+        const { id, name } = (c ?? {}) as { id?: unknown; name?: unknown }
+        return typeof id === 'string' && typeof name === 'string' ? [[id, name] as const] : []
+      }),
+    )
+  } catch {
+    return new Map()
+  }
+}
+
 const CONNECTION_COLUMNS: Column<Connection>[] = [
   { header: 'ID', value: (c) => c.id },
   { header: 'PROVIDER', value: (c) => dash(c.providerId) },
@@ -128,11 +169,19 @@ const ACCOUNT_COLUMNS: Column<Account>[] = [
   { header: 'BALANCE', value: (a) => ils(accountBalance(a)) },
 ]
 
-const TRANSACTION_COLUMNS: Column<Transaction>[] = [
+/** Transaction columns; `customNames` names the organization's own categories (CUSTOM_…). */
+const transactionColumns = (customNames: ReadonlyMap<string, string>): Column<Transaction>[] => [
   { header: 'DATE', value: (t) => dash(t.date?.transactionDate) },
   { header: 'AMOUNT', value: (t) => ils(txnAmount(t)) },
   { header: 'DESCRIPTION', value: (t) => dash(t.merchantName ?? t.description?.description) },
-  { header: 'CATEGORY', value: (t) => `${dash(t.category?.main)}/${dash(t.category?.sub)}` },
+  {
+    header: 'CATEGORY',
+    value: (t) => {
+      const c = shownCategory(t)
+      const main = isCustomCategory(c?.main) ? (customNames.get(c.main) ?? c.main) : c?.main
+      return `${dash(main)}/${dash(c?.sub)}`
+    },
+  },
   { header: 'TYPE', value: (t) => dash(t.type) },
   // The SK, not the id: this column exists to be pasted into `transactions get`,
   // and that route is keyed by SK. Matches accounts/connections, whose ID column
@@ -235,7 +284,9 @@ export function registerReadCommands(
     .action(async (opts: ListOpts) => {
       const config = await loadOrThrow(base.env)
       const envelope = await fetchTransactions<Transaction>(config, base.now, opts)
-      setExit(renderList(ctx, envelope, TRANSACTION_COLUMNS))
+      // --json stays the raw API response; only the table names custom categories.
+      const names = base.json ? new Map<string, string>() : await customCategoryNames(config, base.now, envelope.data)
+      setExit(renderList(ctx, envelope, transactionColumns(names)))
     })
   transactions
     .command('get <sk>')
@@ -246,10 +297,10 @@ export function registerReadCommands(
       setExit(renderGet(ctx, await fetchTransaction<Transaction>(config, base.now, sk)))
     })
 
-  // --- categories (static taxonomy; emitted as-is) ---
+  // --- categories (the taxonomy and the org's own categories; emitted as-is) ---
   program
     .command('categories')
-    .description('The category taxonomy (English + Hebrew)')
+    .description('The category taxonomy (English + Hebrew) and your own categories')
     .option('--json', 'machine-readable output')
     .action(async () => {
       const config = await loadOrThrow(base.env)

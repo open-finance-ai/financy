@@ -12,7 +12,8 @@ import { VERSION } from '../version.js'
  * (`tools.ts` + `integration-tools.ts`): it lists LOCAL_TOOLS and routes
  * tools/call through `callLocalTool`, which resolves config, runs the shared
  * CLI data-core, and returns the same
- * `{data,...}` / `{error,...}` envelopes as `financy --json`.
+ * `{data,...}` / `{error,...}` envelopes as `financy --json`, less the
+ * identifiers `redact.ts` keeps from the model.
  */
 export async function startMcpServer(env: NodeJS.ProcessEnv): Promise<void> {
   const server = new Server(

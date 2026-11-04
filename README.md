@@ -77,7 +77,7 @@ financy status                       Are my connections fresh? one-line-per-bank
 financy connections list|get <id>    Bank/card connections and their fetch state
 financy accounts list|get <id>       Accounts with balances (securities embedded)
 financy transactions list|get <id>   Transactions with --from/--to/--account/--type filters
-financy categories                   The category taxonomy (English + Hebrew)
+financy categories                   The category taxonomy (English + Hebrew) and your own categories
 financy providers list|branches      Reference data: banks and branches
 financy refresh                      Trigger an on-demand refresh of all connections (20 credits)
 financy integrations list|get <id>   Connected business systems (invoicing: Invoice4U, Morning, SUMIT, iCount; clearing: Isracard Business)
@@ -153,9 +153,11 @@ takes `from`/`to`) to read it, and `list_providers` to resolve provider ids.
 
 - **Claude Code**, with the local server: `claude mcp add financy -- npx financy mcp`
   (see [MCP server](#mcp-server-for-ai-agents)).
-- **Claude or ChatGPT**, with no CLI: add the hosted Financy connector,
-  `https://mcp.open-finance.ai/mcp`, as a custom connector and sign in with your
-  Financy account.
+- **Claude or ChatGPT**, with no CLI: in Claude, find Financy in the
+  [Directory](https://claude.ai/directory/connectors/financy), where it
+  is listed as a Community connector. In ChatGPT or another MCP client, add the
+  hosted connector, `https://mcp.open-finance.ai/mcp`, by URL. Either way you sign
+  in with your Financy account.
 
 Then ask in plain language. The assistant pulls bit, bank, and card transactions
 and combines them. Questions like "who hasn't paid yet" work by comparing this

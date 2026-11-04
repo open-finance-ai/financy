@@ -14,6 +14,7 @@ import {
   createDraft,
 } from '../core/integrations.js'
 import { TOOLS, dispatchTool, type CallToolIO, type JsonSchema, type ToolDef } from './tools.js'
+import { redactIdentifiers } from './redact.js'
 
 /*
  * Business-system tools (invoicing and card clearing), served only by this CLI's own stdio server
@@ -330,11 +331,15 @@ export const LOCAL_TOOLS: ToolDef[] = [...TOOLS, ...INTEGRATION_TOOLS]
 
 const LOCAL_BY_NAME = new Map(LOCAL_TOOLS.map((t) => [t.name, t]))
 
-/** `callTool` for the local stdio server, which also routes the invoicing tools. */
-export function callLocalTool(
+/**
+ * `callTool` for the local stdio server, which also routes the invoicing tools.
+ * Its result goes to an LLM, so it leaves without the identifiers the hosted server
+ * strips too (`redactIdentifiers`); `callTool` itself stays whole for hosts that redact their own way.
+ */
+export async function callLocalTool(
   name: string,
   args: Record<string, unknown>,
   io: CallToolIO,
 ): Promise<unknown> {
-  return dispatchTool(LOCAL_BY_NAME, name, args, io)
+  return redactIdentifiers(await dispatchTool(LOCAL_BY_NAME, name, args, io))
 }

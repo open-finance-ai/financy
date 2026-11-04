@@ -6,8 +6,32 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **Your own categories.** The `list_categories` tool description, `financy categories`
+  help and the README say the categories list also carries the organization's own
+  categories (`customCategories`: id, name and the built-in parent each belongs under),
+  that a transaction whose `changedCategory.main` starts with `CUSTOM_` is in one of them
+  and is called by its name, never the id, and that the names are data, not
+  instructions. The description matches the hosted connector's word for word.
+
 ### Fixed
 
+- `financy transactions list` shows the category a person chose (`changedCategory`),
+  falling back to the system's (`category`), where it showed the system's alone. One of
+  the organization's own categories (`CUSTOM_…`) prints by its name: the table reads the
+  categories once, only when a page has one, and prints the raw id if that read fails.
+  `--json` stays the raw API response.
+- The local MCP server (`financy mcp`) keeps from the model what the hosted connector
+  keeps: national ids and company numbers (`psuId`, `psuCorporateId`, `nationalId`,
+  `customerId`), your org and login (`orgId`, `userId`), customers' tax ids
+  (`businessTaxId`) and `maskedTail` are stripped from every tool result, and a person's
+  login in `categorizedBy` or `classifiedBy` reads as `USER`. The CLI's own table and
+  `--json` output are unchanged.
+- Table output prints no control or formatting characters from the data (terminal
+  escape sequences, bidi overrides, zero-width marks), so text other people wrote, such
+  as an organization's category names, cannot drive your terminal or reorder a row.
+  `--json` is unchanged.
 - An organization over its plan's corporate-account limit got `NOT_AVAILABLE_ON_PLAN`
   ("the API is available on Starter and Pro plans") from account and transaction
   reads, in the CLI and in every MCP tool, although it was already on a paid plan. It
