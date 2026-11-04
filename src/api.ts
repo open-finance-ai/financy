@@ -3,6 +3,7 @@ import { USER_AGENT } from './version.js'
 import { httpFetch } from './http.js'
 import {
   authFailed,
+  accountLimitReached,
   planNotEligible,
   forbidden,
   apiUnavailable,
@@ -50,9 +51,12 @@ async function ensureOk(res: Response): Promise<void> {
   if (res.status === 401) throw authFailed()
   const detail = (await res.text().catch(() => '')).slice(0, 300)
   if (res.status === 403) {
-    // The plan gate returns NOT_AVAILABLE_ON_PLAN; any other 403 is a scope /
-    // permission denial we surface distinctly rather than nagging about upgrades.
-    if (!detail || /NOT_AVAILABLE_ON_PLAN|plan/i.test(detail)) throw planNotEligible()
+    // Match the server's error code, never prose: the account-limit message says
+    // "your plan's corporate-account limit", and a loose /plan/ match once turned it
+    // into the paid-plan error. Any other 403 is a scope / permission denial we
+    // surface distinctly rather than nagging about upgrades.
+    if (detail.includes('ACCOUNT_LIMIT_REACHED')) throw accountLimitReached()
+    if (!detail || detail.includes('NOT_AVAILABLE_ON_PLAN')) throw planNotEligible()
     throw forbidden(detail)
   }
   throw apiUnavailable(

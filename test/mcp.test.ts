@@ -157,6 +157,35 @@ describe('mcp get_* tools', () => {
     expect(result).toMatchObject({ error: { code: 'ACCOUNT_NOT_FOUND' } })
   })
 
+  it('returns ACCOUNT_LIMIT_REACHED, not the plan error, when the org is over its account cap', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+    pool.intercept({ path: /\/v2\/data\/transactions/, method: 'GET' }).reply(403, {
+      type: 'ACCOUNT_LIMIT_REACHED',
+      message: "You've reached your plan's corporate-account limit. Upgrade, add a slot, or remove a corporate account to continue.",
+    })
+
+    const result = await callTool('list_transactions', {}, { env: env() })
+
+    expect(result).toMatchObject({ error: { code: 'ACCOUNT_LIMIT_REACHED' } })
+    expect((result as { error: { message: string } }).error.message).toMatch(/corporate-account limit/)
+  })
+
+  it('still returns NOT_AVAILABLE_ON_PLAN for the plan gate', async () => {
+    const { pool, close } = mockApi()
+    teardown = close
+    seedToken(pool)
+    pool.intercept({ path: /\/v2\/data\/accounts/, method: 'GET' }).reply(403, {
+      type: 'NOT_AVAILABLE_ON_PLAN',
+      message: 'The Financy API is available on paid plans only',
+    })
+
+    const result = await callTool('list_accounts', {}, { env: env() })
+
+    expect(result).toMatchObject({ error: { code: 'NOT_AVAILABLE_ON_PLAN' } })
+  })
+
   it('returns MISSING_ARGUMENT when id is omitted', async () => {
     const { pool, close } = mockApi()
     teardown = close
