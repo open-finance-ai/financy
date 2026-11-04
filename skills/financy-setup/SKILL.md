@@ -190,6 +190,13 @@ Tell the user, in plain terms:
 Then stop. Do not retry the command, do not ask for different credentials, and
 do not look for a workaround.
 
+Exit `4` with `"code":"ACCOUNT_LIMIT_REACHED"` is different: the plan is paid, but
+the organization has more corporate bank accounts and cards connected than the plan
+allows. Personal accounts never count. Connections and `financy status` still work;
+account and transaction reads are blocked. Tell the user they can upgrade, add an
+account slot in Financy → Settings → Plan, or remove a corporate account they don't
+need. Do not tell them they need a paid plan.
+
 ## Non-interactive and CI environments
 
 If `FINANCY_CLIENT_ID`, `FINANCY_CLIENT_SECRET` and `FINANCY_USER_ID` are

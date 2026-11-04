@@ -6,6 +6,14 @@ All notable changes to `financy` are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- An organization over its plan's corporate-account limit got `NOT_AVAILABLE_ON_PLAN`
+  ("the API is available on Starter and Pro plans") from account and transaction
+  reads, in the CLI and in every MCP tool, although it was already on a paid plan. It
+  now gets `ACCOUNT_LIMIT_REACHED` with what to do about it (exit `4`, as before).
+  403s are matched on the server's error code, no longer on the word "plan".
+
 ## [0.4.3] — 2026-10-19
 
 ### Changed

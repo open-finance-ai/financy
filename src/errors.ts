@@ -34,6 +34,18 @@ export const planNotEligible = () =>
     'the API is available on every paid plan, including Starter, Pro, and Ultra — upgrade in Financy → Settings → Plan',
   )
 
+/**
+ * The org is over its plan's corporate-account cap. Only corporate checking accounts
+ * and cards count; personal accounts never do. Data reads are blocked until it is
+ * back under the cap, while connection and status reads keep working.
+ */
+export const accountLimitReached = () =>
+  new CliError(
+    EXIT.PLAN,
+    'ACCOUNT_LIMIT_REACHED',
+    "you've reached your plan's corporate-account limit — upgrade or add an account slot in Financy → Settings → Plan, or remove a corporate account you don't need",
+  )
+
 /** A 403 that is NOT the plan gate — a missing scope or otherwise forbidden route. */
 export const forbidden = (detail: string) =>
   new CliError(EXIT.PLAN, 'FORBIDDEN', `the API denied this request (403): ${detail}`)
